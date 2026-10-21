@@ -2,8 +2,8 @@
 /**
  * Overview Tab Component
  *
- * @package    Mc_Functionality
- * @subpackage Mc_Functionality/admin/partials/tabs
+ * @package    Rf_Site_Functionality
+ * @subpackage Rf_Site_Functionality/admin/partials/tabs
  */
 
 // If this file is called directly, abort.
@@ -12,8 +12,8 @@ if ( ! defined( 'WPINC' ) ) {
 }
 ?>
 
-<div class="mc-functionality-overview">
-	<h3>Site Functions Overview</h3>
+<div class="rf-site-functionality-overview">
+	<h3>Site Functionality Overview</h3>
 	<p>This plugin provides a file-based code snippet system for WordPress. Instead of storing snippets in the database, this plugin loads and executes PHP files from a specific directory within the plugin.</p>
 	
 	<div class="mc-overview-features">
@@ -28,11 +28,11 @@ if ( ! defined( 'WPINC' ) ) {
 	</div>
 </div>
 
-<div class="mc-functionality-usage">
+<div class="rf-site-functionality-usage">
 	<h3>How to Use</h3>
 	<div class="mc-usage-steps">
 		<ol>
-			<li><strong>Create PHP files</strong> in the <code><?php echo esc_html( MC_FUNCTIONALITY_SNIPPETS_DIR ); ?></code> directory</li>
+			<li><strong>Create PHP files</strong> in the <code><?php echo esc_html( RF_SITE_FUNCTIONALITY_SNIPPETS_DIR ); ?></code> directory</li>
 			<li><strong>Write WordPress code</strong> directly in the PHP files (shortcodes, hooks, filters, etc.)</li>
 			<li><strong>Save the files</strong> - they will be automatically loaded on the next page load</li>
 		</ol>
@@ -52,16 +52,16 @@ add_action( 'wp_footer', function() {
 ?&gt;</code></pre>
 </div>
 
-<div class="mc-functionality-info">
+<div class="rf-site-functionality-info">
 	<h3>Plugin Information</h3>
 	<table class="form-table">
 		<tr>
 			<th scope="row">Plugin Version</th>
-			<td><?php echo esc_html( MC_FUNCTIONALITY_VERSION ); ?></td>
+			<td><?php echo esc_html( RF_SITE_FUNCTIONALITY_VERSION ); ?></td>
 		</tr>
 		<tr>
 			<th scope="row">Snippets Directory</th>
-			<td><code><?php echo esc_html( MC_FUNCTIONALITY_SNIPPETS_DIR ); ?></code></td>
+			<td><code><?php echo esc_html( RF_SITE_FUNCTIONALITY_SNIPPETS_DIR ); ?></code></td>
 		</tr>
 		<tr>
 			<th scope="row">Loading Priority</th>
@@ -70,7 +70,7 @@ add_action( 'wp_footer', function() {
 	</table>
 </div>
 
-<div class="mc-functionality-security">
+<div class="rf-site-functionality-security">
 	<h3>Security Features</h3>
 	<ul>
 		<li>✅ Files are validated before loading</li>

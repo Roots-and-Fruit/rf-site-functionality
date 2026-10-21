@@ -6,8 +6,8 @@
  * @link       https://www.mattcromwell.com
  * @since      1.0.0
  *
- * @package    Mc_Functionality
- * @subpackage Mc_Functionality/admin
+ * @package    Rf_Site_Functionality
+ * @subpackage Rf_Site_Functionality/admin
  */
 
 /**
@@ -16,11 +16,11 @@
  * Defines the plugin name, version, and two examples hooks for how to
  * enqueue the admin-specific stylesheet and JavaScript.
  *
- * @package    Mc_Functionality
- * @subpackage Mc_Functionality/admin
+ * @package    Rf_Site_Functionality
+ * @subpackage Rf_Site_Functionality/admin
  * @author     Matt Cromwell <info@mattcromwell.com>
  */
-class Mc_Functionality_Admin {
+class Rf_Site_Functionality_Admin {
 
 	/**
 	 * The ID of this plugin.
@@ -61,10 +61,10 @@ class Mc_Functionality_Admin {
 	 */
 	public function add_admin_menu() {
 		add_plugins_page(
-			'Site Functions', // Page title
-			'Site Functions', // Menu title
+			'Site Functionality', // Page title
+			'Site Functionality', // Menu title
 			'manage_options', // Capability required
-			'mc-functionality', // Menu slug
+			'rf-site-functionality', // Menu slug
 			array( $this, 'display_admin_page' ) // Callback function
 		);
 	}
@@ -76,11 +76,11 @@ class Mc_Functionality_Admin {
 	 */
 	public function display_admin_page() {
 		// Get all snippets with their status
-		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-mc-functionality-snippet-loader.php';
-		$snippet_loader = new Mc_Functionality_Snippet_Loader();
+		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-rf-site-functionality-snippet-loader.php';
+		$snippet_loader = new Rf_Site_Functionality_Snippet_Loader();
 		$all_snippets   = $snippet_loader->store()->all_snippets();
 		
-		include plugin_dir_path( __FILE__ ) . 'partials/mc-functionality-admin-display.php';
+		include plugin_dir_path( __FILE__ ) . 'partials/rf-site-functionality-admin-display.php';
 	}
 
 	/**
@@ -91,8 +91,8 @@ class Mc_Functionality_Admin {
 	 * @return   array The modified plugin action links.
 	 */
 	public function add_plugin_action_links( $links ) {
-		// Add "Site Functions" link with icon
-		$settings_link = '<a href="' . admin_url( 'plugins.php?page=mc-functionality' ) . '">' . __( 'Site Functions', 'mc-functionality' ) . '</a>';
+		// Add "Site Functionality" link with icon
+		$settings_link = '<a href="' . admin_url( 'plugins.php?page=rf-site-functionality' ) . '">' . __( 'Site Functionality', 'rf-site-functionality' ) . '</a>';
 		
 		// Insert the link at the beginning of the array
 		array_unshift( $links, $settings_link );
@@ -115,8 +115,8 @@ class Mc_Functionality_Admin {
 	 * @return   true|WP_Error    True if valid, WP_Error if error.
 	 */
 	private function validate_php_code( $php_code ) {
-		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-mc-functionality-php-lint.php';
-		return Mc_Functionality_Php_Lint::check( $php_code );
+		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-rf-site-functionality-php-lint.php';
+		return Rf_Site_Functionality_Php_Lint::check( $php_code );
 	}
 
 
@@ -143,10 +143,10 @@ class Mc_Functionality_Admin {
 	 * @return   true|WP_Error    True if valid, WP_Error if error.
 	 */
 	private function validate_memory_usage( $content ) {
-		error_log( 'MC Functionality: validate_memory_usage() called' );
+		error_log( 'Site Functionality: validate_memory_usage() called' );
 		$memory_limit = ini_get( 'memory_limit' );
 		$memory_limit_bytes = $this->parse_memory_limit( $memory_limit );
-		error_log( 'MC Functionality: Memory limit: ' . $memory_limit . ' (' . $memory_limit_bytes . ' bytes)' );
+		error_log( 'Site Functionality: Memory limit: ' . $memory_limit . ' (' . $memory_limit_bytes . ' bytes)' );
 		
 		// Define memory-hogging patterns to check
 		$memory_checks = array(
@@ -168,26 +168,26 @@ class Mc_Functionality_Admin {
 		);
 		
 		foreach ( $memory_checks as $function => $check ) {
-			error_log( 'MC Functionality: Checking pattern for: ' . $function );
+			error_log( 'Site Functionality: Checking pattern for: ' . $function );
 			if ( preg_match_all( $check['pattern'], $content, $matches ) ) {
-				error_log( 'MC Functionality: Found ' . count( $matches[1] ) . ' matches for ' . $function );
+				error_log( 'Site Functionality: Found ' . count( $matches[1] ) . ' matches for ' . $function );
 				foreach ( $matches[1] as $expression ) {
 					// Clean up the expression and evaluate it safely
 					$expression = trim( $expression );
-					error_log( 'MC Functionality: Raw expression: ' . $expression );
+					error_log( 'Site Functionality: Raw expression: ' . $expression );
 					
 					// Only allow basic mathematical operations for security.
 					if ( preg_match( '/^[\d\s\*\+\-\(\)]+$/', $expression ) ) {
 						$count = $this->evaluate_math( $expression );
 						if ( false === $count ) {
-							error_log( 'MC Functionality: Could not evaluate expression: ' . $expression );
+							error_log( 'Site Functionality: Could not evaluate expression: ' . $expression );
 							continue;
 						}
 					} else {
 						// If it's not a simple math expression, try to parse it as a single number
 						$count = intval( $expression );
 						if ( $count == 0 && $expression !== '0' ) {
-							error_log( 'MC Functionality: Could not parse expression as number: ' . $expression );
+							error_log( 'Site Functionality: Could not parse expression as number: ' . $expression );
 							continue;
 						}
 					}
@@ -195,10 +195,10 @@ class Mc_Functionality_Admin {
 					$estimated_memory = $count * $check['multiplier'];
 					$safe_threshold = $memory_limit_bytes * 0.3; // 30% of memory limit
 					
-					error_log( 'MC Functionality: Evaluated count: ' . $count . ', Estimated memory: ' . $estimated_memory . ', Safe threshold: ' . $safe_threshold );
+					error_log( 'Site Functionality: Evaluated count: ' . $count . ', Estimated memory: ' . $estimated_memory . ', Safe threshold: ' . $safe_threshold );
 					
 					if ( $estimated_memory > $safe_threshold ) {
-						error_log( 'MC Functionality: MEMORY RISK DETECTED!' );
+						error_log( 'Site Functionality: MEMORY RISK DETECTED!' );
 						
 						// Create more actionable error messages based on the function
 						$action_message = '';
@@ -370,10 +370,10 @@ class Mc_Functionality_Admin {
 		 * This function is provided for demonstration purposes only.
 		 *
 		 * An instance of this class should be passed to the run() function
-		 * defined in Mc_Functionality_Loader as all of the hooks are defined
+		 * defined in Rf_Site_Functionality_Loader as all of the hooks are defined
 		 * in that particular class.
 		 *
-		 * The Mc_Functionality_Loader will then create the relationship
+		 * The Rf_Site_Functionality_Loader will then create the relationship
 		 * between the defined hooks and the functions defined in this
 		 * class.
 		 */
@@ -383,7 +383,7 @@ class Mc_Functionality_Admin {
 			$style_deps[] = 'dashicons';
 		}
 
-		wp_enqueue_style( $this->plugin_name, plugin_dir_url( __FILE__ ) . 'css/mc-functionality-admin.css', $style_deps, $this->version, 'all' );
+		wp_enqueue_style( $this->plugin_name, plugin_dir_url( __FILE__ ) . 'css/rf-site-functionality-admin.css', $style_deps, $this->version, 'all' );
 
 	}
 
@@ -398,19 +398,31 @@ class Mc_Functionality_Admin {
 		 * This function is provided for demonstration purposes only.
 		 *
 		 * An instance of this class should be passed to the run() function
-		 * defined in Mc_Functionality_Loader as all of the hooks are defined
+		 * defined in Rf_Site_Functionality_Loader as all of the hooks are defined
 		 * in that particular class.
 		 *
-		 * The Mc_Functionality_Loader will then create the relationship
+		 * The Rf_Site_Functionality_Loader will then create the relationship
 		 * between the defined hooks and the functions defined in this
 		 * class.
 		 */
 
-		wp_enqueue_script( $this->plugin_name, plugin_dir_url( __FILE__ ) . 'js/mc-functionality-admin.js', array( 'jquery' ), $this->version, false );
+		wp_enqueue_script( $this->plugin_name, plugin_dir_url( __FILE__ ) . 'js/rf-site-functionality-admin.js', array( 'jquery' ), $this->version, false );
 
 		// Only load CodeMirror and related scripts on the Snippets tab
 		$current_tab = isset( $_GET['tab'] ) ? sanitize_text_field( $_GET['tab'] ) : 'snippets';
 		
+		if ( 'settings' === $current_tab ) {
+			foreach ( array( 'darcula', 'eclipse', 'material', 'mdn-like', 'monokai' ) as $mc_theme ) {
+				wp_enqueue_style(
+					'codemirror-theme-' . $mc_theme,
+					plugin_dir_url( __FILE__ ) . 'css/' . $mc_theme . '.css',
+					array(),
+					$this->version
+				);
+			}
+			wp_enqueue_code_editor( array( 'type' => 'text/x-php' ) );
+		}
+
 		if ( $current_tab === 'snippets' ) {
 			// Get the selected theme
 			$selected_theme = get_option( 'mc_codemirror_theme', 'default' );
@@ -422,7 +434,7 @@ class Mc_Functionality_Admin {
 				
 				// Debug logging
 				if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-					error_log( 'MC Functionality: Loading theme CSS: ' . $theme_css_url );
+					error_log( 'Site Functionality: Loading theme CSS: ' . $theme_css_url );
 				}
 			}
 			
@@ -434,9 +446,9 @@ class Mc_Functionality_Admin {
 			$max_execution_time = ini_get( 'max_execution_time' );
 			
 			// Localize script for AJAX
-			wp_localize_script( $this->plugin_name, 'mc_functionality_ajax', array(
+			wp_localize_script( $this->plugin_name, 'rf_site_functionality_ajax', array(
 				'ajax_url' => admin_url( 'admin-ajax.php' ),
-				'nonce'    => wp_create_nonce( 'mc_functionality_editor_nonce' ),
+				'nonce'    => wp_create_nonce( 'rf_site_functionality_editor_nonce' ),
 				'theme'    => $selected_theme,
 				'environment' => array(
 					'memory_limit' => $memory_limit,
@@ -452,10 +464,10 @@ class Mc_Functionality_Admin {
 	 * @since    1.0.0
 	 */
 	public function register_ajax_handlers() {
-		add_action( 'wp_ajax_mc_functionality_get_snippet', array( $this, 'ajax_get_snippet' ) );
-		add_action( 'wp_ajax_mc_functionality_save_snippet', array( $this, 'ajax_save_snippet' ) );
-		add_action( 'wp_ajax_mc_functionality_create_snippet', array( $this, 'ajax_create_snippet' ) );
-		add_action( 'wp_ajax_mc_functionality_toggle_snippet', array( $this, 'ajax_toggle_snippet' ) );
+		add_action( 'wp_ajax_rf_site_functionality_get_snippet', array( $this, 'ajax_get_snippet' ) );
+		add_action( 'wp_ajax_rf_site_functionality_save_snippet', array( $this, 'ajax_save_snippet' ) );
+		add_action( 'wp_ajax_rf_site_functionality_create_snippet', array( $this, 'ajax_create_snippet' ) );
+		add_action( 'wp_ajax_rf_site_functionality_toggle_snippet', array( $this, 'ajax_toggle_snippet' ) );
 	}
 
 	/**
@@ -464,7 +476,7 @@ class Mc_Functionality_Admin {
 	 * @since    1.0.0
 	 */
 	public function register_settings() {
-		register_setting( 'mc_functionality_settings', 'mc_codemirror_theme', array(
+		register_setting( 'rf_site_functionality_settings', 'mc_codemirror_theme', array(
 			'type' => 'string',
 			'default' => 'default',
 			'sanitize_callback' => array( $this, 'sanitize_theme_setting' )
@@ -472,7 +484,8 @@ class Mc_Functionality_Admin {
 		
 		// Add Site Health test for snippet environment
 		add_filter( 'site_status_tests', array( $this, 'add_site_health_test' ) );
-		add_action( 'admin_post_mc_functionality_clear_flag', array( $this, 'handle_clear_flag' ) );
+		add_action( 'admin_post_rf_site_functionality_clear_flag', array( $this, 'handle_clear_flag' ) );
+		add_action( 'admin_post_rf_site_functionality_safe_mode', array( $this, 'handle_safe_mode' ) );
 	}
 
 	/**
@@ -497,71 +510,147 @@ class Mc_Functionality_Admin {
 	 * @return void
 	 */
 	public function handle_clear_flag() {
-		check_admin_referer( 'mc_functionality_clear_flag' );
-		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-mc-functionality-snippet-store.php';
+		check_admin_referer( 'rf_site_functionality_clear_flag' );
+		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-rf-site-functionality-snippet-store.php';
 		$caps = current_user_can( 'manage_options' ) ? array( 'manage_options' => true ) : array();
-		$store = new Mc_Functionality_Snippet_Store();
+		$store = new Rf_Site_Functionality_Snippet_Store();
 		$store->clear_flag( $caps );
-		wp_safe_redirect( admin_url( 'plugins.php?page=mc-functionality&tab=settings' ) );
+		wp_safe_redirect( admin_url( 'plugins.php?page=rf-site-functionality&tab=settings' ) );
 		exit;
 	}
 
 	/**
-	 * Add Site Health test for MC Functionality snippet environment
+	 * Turn safe mode on or off from the Settings toggle.
+	 *
+	 * @return void
+	 */
+	public function handle_safe_mode() {
+		check_admin_referer( 'rf_site_functionality_safe_mode' );
+		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-rf-site-functionality-snippet-store.php';
+		$caps     = current_user_can( 'manage_options' ) ? array( 'manage_options' => true ) : array();
+		$disabled = isset( $_POST['mc_safe_mode'] ) && '1' === sanitize_text_field( wp_unslash( $_POST['mc_safe_mode'] ) );
+		$store    = new Rf_Site_Functionality_Snippet_Store();
+		$store->set_disabled( $caps, $disabled );
+		wp_safe_redirect( admin_url( 'plugins.php?page=rf-site-functionality&tab=settings' ) );
+		exit;
+	}
+
+	/**
+	 * Add Site Health test for Site Functionality snippet environment
 	 *
 	 * @param array $tests Array of Site Health tests
 	 * @return array Modified array of tests
 	 */
 	public function add_site_health_test( $tests ) {
-		$tests['direct']['mc_functionality_snippets'] = array(
-			'label' => __( 'MC Functionality Snippet Environment' ),
-			'test' => array( $this, 'test_snippet_environment' ),
+		$tests['direct']['rf_site_functionality_snippets'] = array(
+			'label' => __( 'Site Functionality snippet environment', 'rf-site-functionality' ),
+			'test'  => array( $this, 'test_snippet_environment' ),
 		);
-		
+
 		return $tests;
 	}
 
 	/**
-	 * Test the snippet environment for Site Health
+	 * Test the snippet environment for Site Health.
 	 *
-	 * @return array Test result data
+	 * PHP version is left to WordPress. This test covers the limits the editor
+	 * warns about, plus the snippet directory and safe mode.
+	 *
+	 * @return array Test result data.
 	 */
 	public function test_snippet_environment() {
-		$memory_limit = ini_get( 'memory_limit' );
-		$max_execution_time = ini_get( 'max_execution_time' );
-		$memory_limit_bytes = $this->parse_memory_limit( $memory_limit );
-		
-		$result = array(
-			'label' => __( 'MC Functionality snippet environment is properly configured' ),
-			'status' => 'good',
-			'badge' => array(
-				'label' => __( 'MC Functionality' ),
+		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-rf-site-functionality-snippet-store.php';
+		$store          = new Rf_Site_Functionality_Snippet_Store();
+		$dir            = $store->get_dir();
+		$writable       = '' !== $dir && is_dir( $dir ) && is_writable( $dir );
+		$safe           = $store->is_disabled();
+		$memory_limit   = trim( (string) ini_get( 'memory_limit' ) );
+		$memory_open    = '-1' === $memory_limit;
+		$memory_low     = ! $memory_open && $this->parse_memory_limit( $memory_limit ) < 64 * 1024 * 1024;
+		$max_time       = (int) ini_get( 'max_execution_time' );
+		$time_low       = $max_time > 0 && $max_time < 30;
+		$paragraphs     = array();
+
+		if ( $memory_open ) {
+			$paragraphs[] = __( 'PHP has no memory limit.', 'rf-site-functionality' );
+		} elseif ( $memory_low ) {
+			$paragraphs[] = sprintf(
+				/* translators: %s: PHP memory_limit value. */
+				__( 'Memory limit is %s. Snippets are more reliable with at least 64 MB.', 'rf-site-functionality' ),
+				$memory_limit
+			);
+		} else {
+			$paragraphs[] = sprintf(
+				/* translators: %s: PHP memory_limit value. */
+				__( 'Memory limit is %s.', 'rf-site-functionality' ),
+				$memory_limit
+			);
+		}
+
+		if ( 0 === $max_time ) {
+			$paragraphs[] = __( 'PHP has no execution time limit.', 'rf-site-functionality' );
+		} elseif ( $time_low ) {
+			$paragraphs[] = sprintf(
+				/* translators: %d: max_execution_time in seconds. */
+				__( 'Max execution time is %d seconds. Complex snippets may run out of time. 30 seconds or more is a better fit, and 0 means no limit.', 'rf-site-functionality' ),
+				$max_time
+			);
+		} else {
+			$paragraphs[] = sprintf(
+				/* translators: %d: max_execution_time in seconds. */
+				__( 'Max execution time is %d seconds.', 'rf-site-functionality' ),
+				$max_time
+			);
+		}
+
+		if ( $writable ) {
+			$paragraphs[] = __( 'The snippet directory is writable.', 'rf-site-functionality' );
+		} else {
+			$paragraphs[] = __( 'The snippet directory is not writable, so snippets cannot be saved.', 'rf-site-functionality' );
+		}
+
+		$actions = '';
+		if ( $safe ) {
+			$paragraphs[] = __( 'Safe mode is on, so every snippet stays off until you turn it off.', 'rf-site-functionality' );
+			$actions      = sprintf(
+				'<p><a href="%1$s">%2$s</a></p>',
+				esc_url( admin_url( 'plugins.php?page=rf-site-functionality&tab=settings' ) ),
+				esc_html__( 'Turn safe mode off', 'rf-site-functionality' )
+			);
+		} else {
+			$paragraphs[] = __( 'Safe mode is off.', 'rf-site-functionality' );
+		}
+
+		if ( ! $writable ) {
+			$status = 'critical';
+			$label  = __( 'Site Functionality cannot write snippets', 'rf-site-functionality' );
+		} elseif ( $safe ) {
+			$status = 'recommended';
+			$label  = __( 'Site Functionality safe mode is on', 'rf-site-functionality' );
+		} elseif ( $memory_low || $time_low ) {
+			$status = 'recommended';
+			$label  = __( 'Site Functionality may need higher PHP limits', 'rf-site-functionality' );
+		} else {
+			$status = 'good';
+			$label  = __( 'Site Functionality snippet environment is ready', 'rf-site-functionality' );
+		}
+
+		$description = '';
+		foreach ( $paragraphs as $paragraph ) {
+			$description .= '<p>' . esc_html( $paragraph ) . '</p>';
+		}
+
+		return array(
+			'label'       => $label,
+			'status'      => $status,
+			'badge'       => array(
+				'label' => __( 'Site Functionality', 'rf-site-functionality' ),
 				'color' => 'blue',
 			),
-			'description' => sprintf(
-				__( 'Memory limit: %s, Max execution time: %s seconds' ),
-				$memory_limit,
-				$max_execution_time
-			),
-			'actions' => '',
-			'test' => 'mc_functionality_snippets',
+			'description' => $description,
+			'actions'     => $actions,
+			'test'        => 'rf_site_functionality_snippets',
 		);
-		
-		// Check if memory limit is reasonable for snippet execution
-		if ( $memory_limit_bytes < 64 * 1024 * 1024 ) { // Less than 64MB
-			$result['status'] = 'recommended';
-			$result['label'] = __( 'MC Functionality may need higher memory limit' );
-			$result['description'] .= ' ' . __( 'Consider increasing memory limit for better snippet performance.' );
-		}
-		
-		// Check if execution time is reasonable
-		if ( $max_execution_time > 0 && $max_execution_time < 30 ) { // Less than 30 seconds
-			$result['status'] = 'recommended';
-			$result['label'] = __( 'MC Functionality may need higher execution time limit' );
-			$result['description'] .= ' ' . __( 'Consider increasing max_execution_time for complex snippets.' );
-		}
-		
-		return $result;
 	}
 
 	/**
@@ -571,7 +660,7 @@ class Mc_Functionality_Admin {
 	 */
 	public function ajax_get_snippet() {
 		// Verify nonce
-		if ( ! wp_verify_nonce( $_POST['nonce'], 'mc_functionality_editor_nonce' ) ) {
+		if ( ! wp_verify_nonce( $_POST['nonce'], 'rf_site_functionality_editor_nonce' ) ) {
 			wp_die( 'Security check failed' );
 		}
 
@@ -581,8 +670,8 @@ class Mc_Functionality_Admin {
 		}
 
 		$filename = sanitize_text_field( $_POST['filename'] );
-		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-mc-functionality-snippet-store.php';
-		$store = new Mc_Functionality_Snippet_Store();
+		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-rf-site-functionality-snippet-store.php';
+		$store = new Rf_Site_Functionality_Snippet_Store();
 		$read  = $store->read( $filename );
 		if ( is_wp_error( $read ) ) {
 			wp_send_json_error( 'File not found or access denied' );
@@ -595,7 +684,7 @@ class Mc_Functionality_Admin {
 		$metadata = $this->parse_snippet_metadata( $content );
 
 		// Debug logging
-		error_log( 'MC Functionality: AJAX response metadata - Run Context: ' . $metadata['run_context'] . ', Priority: ' . $metadata['priority'] );
+		error_log( 'Site Functionality: AJAX response metadata - Run Context: ' . $metadata['run_context'] . ', Priority: ' . $metadata['priority'] );
 
 		wp_send_json_success( array(
 			'content' => $content,
@@ -613,7 +702,7 @@ class Mc_Functionality_Admin {
 	 */
 	public function ajax_save_snippet() {
 		// Verify nonce
-		if ( ! wp_verify_nonce( $_POST['nonce'], 'mc_functionality_editor_nonce' ) ) {
+		if ( ! wp_verify_nonce( $_POST['nonce'], 'rf_site_functionality_editor_nonce' ) ) {
 			wp_die( 'Security check failed' );
 		}
 
@@ -653,8 +742,8 @@ class Mc_Functionality_Admin {
 		}
 
 		// Determine file paths. The editor speaks example.php. Disk files are example.mcphp.
-		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-mc-functionality-snippet-store.php';
-		$store = new Mc_Functionality_Snippet_Store();
+		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-rf-site-functionality-snippet-store.php';
+		$store = new Rf_Site_Functionality_Snippet_Store();
 		$paths = $store->file_paths( $base_filename );
 		if ( is_wp_error( $paths ) ) {
 			wp_send_json_error( 'Invalid filename' );
@@ -673,20 +762,20 @@ class Mc_Functionality_Admin {
 
 		// Update content with metadata
 		$updated_content = $this->update_snippet_metadata( $content, $run_context, $priority );
-		$updated_content = Mc_Functionality_Snippet_Meta::ensure_guard( $updated_content );
+		$updated_content = Rf_Site_Functionality_Snippet_Meta::ensure_guard( $updated_content );
 		
 		// Debug logging
-		error_log( 'MC Functionality: Original content length: ' . strlen( $content ) );
-		error_log( 'MC Functionality: Updated content length: ' . strlen( $updated_content ) );
-		error_log( 'MC Functionality: Run Context: ' . $run_context . ', Priority: ' . $priority );
+		error_log( 'Site Functionality: Original content length: ' . strlen( $content ) );
+		error_log( 'Site Functionality: Updated content length: ' . strlen( $updated_content ) );
+		error_log( 'Site Functionality: Run Context: ' . $run_context . ', Priority: ' . $priority );
 
 		// Validate content BEFORE writing to file
-		error_log( 'MC Functionality: Starting validation...' );
+		error_log( 'Site Functionality: Starting validation...' );
 		$validation_result = $this->validate_snippet_content( $updated_content );
-		error_log( 'MC Functionality: Validation result: ' . ( is_wp_error( $validation_result ) ? 'ERROR: ' . $validation_result->get_error_message() : 'SUCCESS' ) );
+		error_log( 'Site Functionality: Validation result: ' . ( is_wp_error( $validation_result ) ? 'ERROR: ' . $validation_result->get_error_message() : 'SUCCESS' ) );
 		
 		if ( is_wp_error( $validation_result ) ) {
-			error_log( 'MC Functionality: Sending JSON error response: ' . $validation_result->get_error_message() );
+			error_log( 'Site Functionality: Sending JSON error response: ' . $validation_result->get_error_message() );
 			wp_send_json_error( array(
 				'message' => $validation_result->get_error_message(),
 				'notice_type' => 'error'
@@ -739,7 +828,7 @@ class Mc_Functionality_Admin {
 	 */
 	public function ajax_create_snippet() {
 		// Verify nonce
-		if ( ! wp_verify_nonce( $_POST['nonce'], 'mc_functionality_editor_nonce' ) ) {
+		if ( ! wp_verify_nonce( $_POST['nonce'], 'rf_site_functionality_editor_nonce' ) ) {
 			wp_die( 'Security check failed' );
 		}
 
@@ -758,8 +847,8 @@ class Mc_Functionality_Admin {
 
 		// Generate filename from name
 		$filename = $this->generate_filename_from_name( $name );
-		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-mc-functionality-snippet-store.php';
-		$store = new Mc_Functionality_Snippet_Store();
+		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-rf-site-functionality-snippet-store.php';
+		$store = new Rf_Site_Functionality_Snippet_Store();
 		$paths = $store->file_paths( $filename );
 		if ( is_wp_error( $paths ) ) {
 			wp_send_json_error( 'Invalid filename' );
@@ -775,8 +864,8 @@ class Mc_Functionality_Admin {
 
 		// Generate initial content
 		$content = $this->generate_snippet_template( $name, $description );
-		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-mc-functionality-snippet-meta.php';
-		$content = Mc_Functionality_Snippet_Meta::ensure_guard( $content );
+		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-rf-site-functionality-snippet-meta.php';
+		$content = Rf_Site_Functionality_Snippet_Meta::ensure_guard( $content );
 
 		// Write file content as .disabled (will be enabled after first successful save)
 		$result = file_put_contents( $disabled_path, $content );
@@ -802,7 +891,7 @@ class Mc_Functionality_Admin {
 	 */
 	public function ajax_toggle_snippet() {
 		// Verify nonce
-		if ( ! wp_verify_nonce( $_POST['nonce'], 'mc_functionality_editor_nonce' ) ) {
+		if ( ! wp_verify_nonce( $_POST['nonce'], 'rf_site_functionality_editor_nonce' ) ) {
 			wp_die( 'Security check failed' );
 		}
 
@@ -819,7 +908,7 @@ class Mc_Functionality_Admin {
 		}
 
 		// Initialize snippet loader
-		$snippet_loader = new Mc_Functionality_Snippet_Loader();
+		$snippet_loader = new Rf_Site_Functionality_Snippet_Loader();
 		
 		// Check current status
 		$is_enabled = $snippet_loader->is_snippet_enabled( $filename );
@@ -834,8 +923,8 @@ class Mc_Functionality_Admin {
 			if ( is_wp_error( $read ) ) {
 				wp_send_json_error( 'File not found or access denied' );
 			}
-			require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-mc-functionality-php-lint.php';
-			$lint = Mc_Functionality_Php_Lint::check( $read['content'] );
+			require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-rf-site-functionality-php-lint.php';
+			$lint = Rf_Site_Functionality_Php_Lint::check( $read['content'] );
 			if ( is_wp_error( $lint ) ) {
 				wp_send_json_error( $lint->get_error_message() );
 			}
@@ -899,7 +988,7 @@ class Mc_Functionality_Admin {
 		$template .= " * Run-Context: " . esc_html( $run_context ) . "\n";
 		$template .= " * Priority: " . intval( $priority ) . "\n";
 		$template .= " * \n";
-		$template .= " * @package Mc_Functionality\n";
+		$template .= " * @package Rf_Site_Functionality\n";
 		$template .= " */\n\n";
 		$template .= "// Your code here\n";
 		return $template;
@@ -913,8 +1002,8 @@ class Mc_Functionality_Admin {
 	 * @return   array  Array with 'run_context' and 'priority' values.
 	 */
 	private function parse_snippet_metadata( $content ) {
-		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-mc-functionality-snippet-meta.php';
-		return Mc_Functionality_Snippet_Meta::parse( $content );
+		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-rf-site-functionality-snippet-meta.php';
+		return Rf_Site_Functionality_Snippet_Meta::parse( $content );
 	}
 
 	/**
@@ -927,8 +1016,8 @@ class Mc_Functionality_Admin {
 	 * @return   string The updated content with metadata.
 	 */
 	private function update_snippet_metadata( $content, $run_context, $priority ) {
-		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-mc-functionality-snippet-meta.php';
-		return Mc_Functionality_Snippet_Meta::update( $content, $run_context, $priority );
+		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-rf-site-functionality-snippet-meta.php';
+		return Rf_Site_Functionality_Snippet_Meta::update( $content, $run_context, $priority );
 	}
 
 }

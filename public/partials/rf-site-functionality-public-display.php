@@ -12,8 +12,8 @@ if ( ! defined( 'ABSPATH' ) ) {
  * @link       https://www.mattcromwell.com
  * @since      1.0.0
  *
- * @package    Mc_Functionality
- * @subpackage Mc_Functionality/public/partials
+ * @package    Rf_Site_Functionality
+ * @subpackage Rf_Site_Functionality/public/partials
  */
 ?>
 

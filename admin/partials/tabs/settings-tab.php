@@ -2,130 +2,94 @@
 /**
  * Settings Tab Component
  *
- * @package    Mc_Functionality
- * @subpackage Mc_Functionality/admin/partials/tabs
+ * @package    Rf_Site_Functionality
+ * @subpackage Rf_Site_Functionality/admin/partials/tabs
  */
 
 // If this file is called directly, abort.
 if ( ! defined( 'WPINC' ) ) {
 	die;
 }
+
+$mc_codemirror_theme = get_option( 'mc_codemirror_theme', 'default' );
+$mc_theme_preview    = "<?php\nadd_shortcode( 'hello', function () {\n\treturn '<p class=\"hi\">Hello</p>';\n} );\n";
+$mc_store            = new Rf_Site_Functionality_Snippet_Store();
+$mc_safe_mode        = $mc_store->is_disabled();
+$mc_safe_on          = _x( 'On', 'toggle state', 'rf-site-functionality' );
+$mc_safe_off         = _x( 'Off', 'toggle state', 'rf-site-functionality' );
 ?>
 
-<!-- Settings Tab Content -->
-<div class="mc-functionality-settings">
-	<h3>Plugin Settings</h3>
-	
-	<form method="post" action="options.php">
-		<?php settings_fields( 'mc_functionality_settings' ); ?>
-		<?php do_settings_sections( 'mc_functionality_settings' ); ?>
-		
-		<table class="form-table">
-			<tr>
-				<th scope="row">
-					<label for="mc_codemirror_theme">CodeMirror Theme</label>
-				</th>
-				<td>
-					<select name="mc_codemirror_theme" id="mc_codemirror_theme">
-						<option value="default" <?php selected( get_option( 'mc_codemirror_theme', 'default' ), 'default' ); ?>>Default</option>
-						<option value="darcula" <?php selected( get_option( 'mc_codemirror_theme', 'default' ), 'darcula' ); ?>>Darcula</option>
-						<option value="eclipse" <?php selected( get_option( 'mc_codemirror_theme', 'default' ), 'eclipse' ); ?>>Eclipse</option>
-						<option value="material" <?php selected( get_option( 'mc_codemirror_theme', 'default' ), 'material' ); ?>>Material</option>
-						<option value="mdn-like" <?php selected( get_option( 'mc_codemirror_theme', 'default' ), 'mdn-like' ); ?>>MDN-like</option>
-						<option value="monokai" <?php selected( get_option( 'mc_codemirror_theme', 'default' ), 'monokai' ); ?>>Monokai</option>
-					</select>
-					<p class="description">Choose the theme for the code editor. Changes will apply to new editing sessions.</p>
-				</td>
-			</tr>
-		</table>
-		
-		<?php submit_button( 'Save Settings' ); ?>
-	</form>
+<div class="rf-site-functionality-settings">
+	<div class="mc-settings__head">
+		<h2 class="mc-settings__title"><?php esc_html_e( 'Plugin Settings', 'rf-site-functionality' ); ?></h2>
+		<button type="submit" class="button button-primary" form="mc-codemirror-settings"><?php esc_html_e( 'Save Settings', 'rf-site-functionality' ); ?></button>
+	</div>
 
-	<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
-		<input type="hidden" name="action" value="mc_functionality_clear_flag" />
-		<?php wp_nonce_field( 'mc_functionality_clear_flag' ); ?>
-		<p class="description">If safe mode turned every snippet off, this turns them back on.</p>
-		<?php submit_button( 'Turn snippets back on' ); ?>
-	</form>
+	<section class="mc-setting">
+		<h3><?php esc_html_e( 'CodeMirror Theme', 'rf-site-functionality' ); ?></h3>
+		<p class="mc-setting__description">
+			<?php
+			echo wp_kses(
+				sprintf(
+					/* translators: %s: URL of the Site Health screen. */
+					__( 'Choose the theme for the code editor. Changes will apply to new editing sessions. The editor warns when a snippet looks like it would exceed PHP\'s limits. See <a href="%s">Site Health</a> when those limits get tight.', 'rf-site-functionality' ),
+					esc_url( admin_url( 'site-health.php' ) )
+				),
+				array(
+					'a' => array(
+						'href' => true,
+					),
+				)
+			);
+			?>
+		</p>
+		<form id="mc-codemirror-settings" method="post" action="options.php">
+			<?php settings_fields( 'rf_site_functionality_settings' ); ?>
+			<?php do_settings_sections( 'rf_site_functionality_settings' ); ?>
+			<div class="mc-setting__row">
+				<div class="mc-setting__field">
+					<label class="mc-setting__label" for="mc_codemirror_theme"><?php esc_html_e( 'Editor theme', 'rf-site-functionality' ); ?></label>
+					<select name="mc_codemirror_theme" id="mc_codemirror_theme">
+						<option value="default" <?php selected( $mc_codemirror_theme, 'default' ); ?>><?php esc_html_e( 'Default', 'rf-site-functionality' ); ?></option>
+						<option value="darcula" <?php selected( $mc_codemirror_theme, 'darcula' ); ?>><?php esc_html_e( 'Darcula', 'rf-site-functionality' ); ?></option>
+						<option value="eclipse" <?php selected( $mc_codemirror_theme, 'eclipse' ); ?>><?php esc_html_e( 'Eclipse', 'rf-site-functionality' ); ?></option>
+						<option value="material" <?php selected( $mc_codemirror_theme, 'material' ); ?>><?php esc_html_e( 'Material', 'rf-site-functionality' ); ?></option>
+						<option value="mdn-like" <?php selected( $mc_codemirror_theme, 'mdn-like' ); ?>><?php esc_html_e( 'MDN-like', 'rf-site-functionality' ); ?></option>
+						<option value="monokai" <?php selected( $mc_codemirror_theme, 'monokai' ); ?>><?php esc_html_e( 'Monokai', 'rf-site-functionality' ); ?></option>
+					</select>
+				</div>
+				<div class="mc-settings-theme__preview">
+					<label class="screen-reader-text" for="mc-theme-preview"><?php esc_html_e( 'Theme preview', 'rf-site-functionality' ); ?></label>
+					<textarea id="mc-theme-preview" readonly><?php echo esc_textarea( $mc_theme_preview ); ?></textarea>
+				</div>
+			</div>
+		</form>
+	</section>
+
+	<section class="mc-setting">
+		<h3><?php esc_html_e( 'Safe Mode', 'rf-site-functionality' ); ?></h3>
+		<p class="mc-setting__description" id="mc-safe-mode-desc"><?php esc_html_e( 'Safe mode stops every snippet from running. Turn it off here when you want them to load again.', 'rf-site-functionality' ); ?></p>
+		<form id="mc-safe-mode-form" method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+			<input type="hidden" name="action" value="rf_site_functionality_safe_mode" />
+			<?php wp_nonce_field( 'rf_site_functionality_safe_mode' ); ?>
+			<input type="hidden" name="mc_safe_mode" value="0" />
+			<div class="mc-setting__control">
+				<label class="mc-setting__label" id="mc-safe-mode-label" for="mc_safe_mode"><?php esc_html_e( 'Keep snippets off', 'rf-site-functionality' ); ?></label>
+				<label class="mc-rf-toggle">
+					<input class="mc-rf-toggle__input mc-safe-mode-toggle" type="checkbox" name="mc_safe_mode" id="mc_safe_mode" value="1" aria-labelledby="mc-safe-mode-label mc-safe-mode-state" aria-describedby="mc-safe-mode-desc" <?php checked( $mc_safe_mode ); ?> />
+					<span class="mc-rf-toggle__track" aria-hidden="true"></span>
+					<span class="mc-rf-toggle__state" id="mc-safe-mode-state" data-enabled="<?php echo esc_attr( $mc_safe_on ); ?>" data-disabled="<?php echo esc_attr( $mc_safe_off ); ?>"><?php echo esc_html( $mc_safe_mode ? $mc_safe_on : $mc_safe_off ); ?></span>
+				</label>
+			</div>
+		</form>
+	</section>
+
 	<?php
-	require_once dirname( __DIR__, 3 ) . '/includes/class-mc-functionality-standalone.php';
-	$mc_mu_file = WP_CONTENT_DIR . '/mu-plugins/mc-functionality-loader.php';
-	$mc_notice  = Mc_Functionality_Standalone::notice( $mc_mu_file );
+	require_once dirname( __DIR__, 3 ) . '/includes/class-rf-site-functionality-standalone.php';
+	$mc_mu_file = WP_CONTENT_DIR . '/mu-plugins/rf-site-functionality-loader.php';
+	$mc_notice  = Rf_Site_Functionality_Standalone::notice( $mc_mu_file );
 	if ( '' !== $mc_notice ) {
-		echo '<div class="notice notice-warning"><p>' . esc_html( $mc_notice ) . '</p></div>';
+		echo '<div class="notice notice-warning mc-settings__notice"><p>' . esc_html( $mc_notice ) . '</p></div>';
 	}
 	?>
-	
-	<!-- Environment Information -->
-	<div class="mc-environment-info">
-		<h3>PHP Environment</h3>
-		<p>Current PHP configuration for snippet execution:</p>
-		
-		<table class="form-table">
-			<tr>
-				<th scope="row">Memory Limit</th>
-				<td>
-					<code><?php echo esc_html( ini_get( 'memory_limit' ) ); ?></code>
-					<?php 
-					$memory_limit = ini_get( 'memory_limit' );
-					$memory_bytes = 0;
-					
-					// Parse memory limit to bytes for comparison
-					$unit = strtolower( substr( $memory_limit, -1 ) );
-					$value = intval( $memory_limit );
-					
-					switch ( $unit ) {
-						case 'g':
-							$memory_bytes = $value * 1024 * 1024 * 1024;
-							break;
-						case 'm':
-							$memory_bytes = $value * 1024 * 1024;
-							break;
-						case 'k':
-							$memory_bytes = $value * 1024;
-							break;
-						default:
-							$memory_bytes = $value;
-					}
-					
-					if ( $memory_bytes < 64 * 1024 * 1024 ) {
-						echo '<p class="description mc-rf-settings__status mc-rf-settings__status--warn"><span class="dashicons dashicons-warning" aria-hidden="true"></span> ' . esc_html__( 'Consider increasing for better snippet performance', 'mc-functionality' ) . '</p>';
-					} else {
-						echo '<p class="description mc-rf-settings__status mc-rf-settings__status--ok"><span class="dashicons dashicons-yes-alt" aria-hidden="true"></span> ' . esc_html__( 'Good for snippet execution', 'mc-functionality' ) . '</p>';
-					}
-					?>
-				</td>
-			</tr>
-			<tr>
-				<th scope="row">Max Execution Time</th>
-				<td>
-					<code><?php echo esc_html( ini_get( 'max_execution_time' ) ); ?> seconds</code>
-					<?php 
-					$max_execution_time = ini_get( 'max_execution_time' );
-					if ( $max_execution_time > 0 && $max_execution_time < 30 ) {
-						echo '<p class="description mc-rf-settings__status mc-rf-settings__status--warn"><span class="dashicons dashicons-warning" aria-hidden="true"></span> ' . esc_html__( 'Consider increasing for complex snippets', 'mc-functionality' ) . '</p>';
-					} else {
-						echo '<p class="description mc-rf-settings__status mc-rf-settings__status--ok"><span class="dashicons dashicons-yes-alt" aria-hidden="true"></span> ' . esc_html__( 'Good for snippet execution', 'mc-functionality' ) . '</p>';
-					}
-					?>
-				</td>
-			</tr>
-			<tr>
-				<th scope="row">PHP Version</th>
-				<td>
-					<code><?php echo esc_html( PHP_VERSION ); ?></code>
-					<?php 
-					if ( version_compare( PHP_VERSION, '7.4', '>=' ) ) {
-						echo '<p class="description mc-rf-settings__status mc-rf-settings__status--ok"><span class="dashicons dashicons-yes-alt" aria-hidden="true"></span> ' . esc_html__( 'Good for modern PHP features', 'mc-functionality' ) . '</p>';
-					} else {
-						echo '<p class="description mc-rf-settings__status mc-rf-settings__status--warn"><span class="dashicons dashicons-warning" aria-hidden="true"></span> ' . esc_html__( 'Consider upgrading for better performance', 'mc-functionality' ) . '</p>';
-					}
-					?>
-				</td>
-			</tr>
-		</table>
-		
-		<p class="description"><?php esc_html_e( 'These limits are what PHP will allow a snippet to use. The editor warns you when a snippet looks like it would exceed them.', 'mc-functionality' ); ?></p>
-	</div>
 </div>

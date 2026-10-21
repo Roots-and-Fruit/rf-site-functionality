@@ -9,8 +9,8 @@
  * @link       https://www.mattcromwell.com
  * @since      1.0.0
  *
- * @package    Mc_Functionality
- * @subpackage Mc_Functionality/includes
+ * @package    Rf_Site_Functionality
+ * @subpackage Rf_Site_Functionality/includes
  */
 
 /**
@@ -23,11 +23,11 @@
  * version of the plugin.
  *
  * @since      1.0.0
- * @package    Mc_Functionality
- * @subpackage Mc_Functionality/includes
+ * @package    Rf_Site_Functionality
+ * @subpackage Rf_Site_Functionality/includes
  * @author     Matt Cromwell <info@mattcromwell.com>
  */
-class Mc_Functionality {
+class Rf_Site_Functionality {
 
 	/**
 	 * The loader that's responsible for maintaining and registering all hooks that power
@@ -35,7 +35,7 @@ class Mc_Functionality {
 	 *
 	 * @since    1.0.0
 	 * @access   protected
-	 * @var      Mc_Functionality_Loader    $loader    Maintains and registers all hooks for the plugin.
+	 * @var      Rf_Site_Functionality_Loader    $loader    Maintains and registers all hooks for the plugin.
 	 */
 	protected $loader;
 
@@ -62,7 +62,7 @@ class Mc_Functionality {
 	 *
 	 * @since    1.0.0
 	 * @access   protected
-	 * @var      Mc_Functionality_Admin    $plugin_admin    The admin class instance.
+	 * @var      Rf_Site_Functionality_Admin    $plugin_admin    The admin class instance.
 	 */
 	protected $plugin_admin;
 
@@ -76,12 +76,12 @@ class Mc_Functionality {
 	 * @since    1.0.0
 	 */
 	public function __construct() {
-		if ( defined( 'MC_FUNCTIONALITY_VERSION' ) ) {
-			$this->version = MC_FUNCTIONALITY_VERSION;
+		if ( defined( 'RF_SITE_FUNCTIONALITY_VERSION' ) ) {
+			$this->version = RF_SITE_FUNCTIONALITY_VERSION;
 		} else {
 			$this->version = '1.0.0';
 		}
-		$this->plugin_name = 'mc-functionality';
+		$this->plugin_name = 'rf-site-functionality';
 
 		$this->load_dependencies();
 		$this->set_locale();
@@ -95,10 +95,10 @@ class Mc_Functionality {
 	 *
 	 * Include the following files that make up the plugin:
 	 *
-	 * - Mc_Functionality_Loader. Orchestrates the hooks of the plugin.
-	 * - Mc_Functionality_i18n. Defines internationalization functionality.
-	 * - Mc_Functionality_Admin. Defines all hooks for the admin area.
-	 * - Mc_Functionality_Public. Defines all hooks for the public side of the site.
+	 * - Rf_Site_Functionality_Loader. Orchestrates the hooks of the plugin.
+	 * - Rf_Site_Functionality_i18n. Defines internationalization functionality.
+	 * - Rf_Site_Functionality_Admin. Defines all hooks for the admin area.
+	 * - Rf_Site_Functionality_Public. Defines all hooks for the public side of the site.
 	 *
 	 * Create an instance of the loader which will be used to register the hooks
 	 * with WordPress.
@@ -112,37 +112,37 @@ class Mc_Functionality {
 		 * The class responsible for orchestrating the actions and filters of the
 		 * core plugin.
 		 */
-		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-mc-functionality-loader.php';
-		require_once __DIR__ . '/class-mc-functionality-abilities.php';
-		Mc_Functionality_Abilities::register();
+		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-rf-site-functionality-loader.php';
+		require_once __DIR__ . '/class-rf-site-functionality-abilities.php';
+		Rf_Site_Functionality_Abilities::register();
 
 		/**
 		 * The class responsible for defining internationalization functionality
 		 * of the plugin.
 		 */
-		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-mc-functionality-i18n.php';
+		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-rf-site-functionality-i18n.php';
 
 		/**
 		 * The class responsible for defining all actions that occur in the admin area.
 		 */
 		if ( is_admin() ) {
-			require_once plugin_dir_path( dirname( __FILE__ ) ) . 'admin/class-mc-functionality-admin.php';
+			require_once plugin_dir_path( dirname( __FILE__ ) ) . 'admin/class-rf-site-functionality-admin.php';
 		}
 
 		/**
 		 * The class responsible for defining all actions that occur in the public-facing
 		 * side of the site.
 		 */
-		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'public/class-mc-functionality-public.php';
+		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'public/class-rf-site-functionality-public.php';
 
-		$this->loader = new Mc_Functionality_Loader();
+		$this->loader = new Rf_Site_Functionality_Loader();
 
 	}
 
 	/**
 	 * Define the locale for this plugin for internationalization.
 	 *
-	 * Uses the Mc_Functionality_i18n class in order to set the domain and to register the hook
+	 * Uses the Rf_Site_Functionality_i18n class in order to set the domain and to register the hook
 	 * with WordPress.
 	 *
 	 * @since    1.0.0
@@ -150,7 +150,7 @@ class Mc_Functionality {
 	 */
 	private function set_locale() {
 
-		$plugin_i18n = new Mc_Functionality_i18n();
+		$plugin_i18n = new Rf_Site_Functionality_i18n();
 
 		$this->loader->add_action( 'plugins_loaded', $plugin_i18n, 'load_plugin_textdomain' );
 
@@ -164,18 +164,18 @@ class Mc_Functionality {
 	 * @access   private
 	 */
 	private function define_admin_hooks() {
-		if ( ! is_admin() || ! class_exists( 'Mc_Functionality_Admin' ) ) {
+		if ( ! is_admin() || ! class_exists( 'Rf_Site_Functionality_Admin' ) ) {
 			return;
 		}
 
-		$this->plugin_admin = new Mc_Functionality_Admin( $this->get_plugin_name(), $this->get_version() );
+		$this->plugin_admin = new Rf_Site_Functionality_Admin( $this->get_plugin_name(), $this->get_version() );
 
 		$this->loader->add_action( 'admin_enqueue_scripts', $this->plugin_admin, 'enqueue_styles' );
 		$this->loader->add_action( 'admin_enqueue_scripts', $this->plugin_admin, 'enqueue_scripts' );
 		$this->loader->add_action( 'admin_menu', $this->plugin_admin, 'add_admin_menu' );
 		$this->loader->add_action( 'init', $this->plugin_admin, 'register_ajax_handlers' );
 		$this->loader->add_action( 'admin_init', $this->plugin_admin, 'register_settings' );
-		$this->loader->add_filter( 'plugin_action_links_' . plugin_basename( plugin_dir_path( dirname( __FILE__ ) ) . 'mc-functionality.php' ), $this->plugin_admin, 'add_plugin_action_links' );
+		$this->loader->add_filter( 'plugin_action_links_' . plugin_basename( plugin_dir_path( dirname( __FILE__ ) ) . 'rf-site-functionality.php' ), $this->plugin_admin, 'add_plugin_action_links' );
 
 	}
 
@@ -188,7 +188,7 @@ class Mc_Functionality {
 	 */
 	private function define_public_hooks() {
 
-		$plugin_public = new Mc_Functionality_Public( $this->get_plugin_name(), $this->get_version() );
+		$plugin_public = new Rf_Site_Functionality_Public( $this->get_plugin_name(), $this->get_version() );
 
 		unset( $plugin_public );
 
@@ -218,7 +218,7 @@ class Mc_Functionality {
 	 * The reference to the class that orchestrates the hooks with the plugin.
 	 *
 	 * @since     1.0.0
-	 * @return    Mc_Functionality_Loader    Orchestrates the hooks of the plugin.
+	 * @return    Rf_Site_Functionality_Loader    Orchestrates the hooks of the plugin.
 	 */
 	public function get_loader() {
 		return $this->loader;

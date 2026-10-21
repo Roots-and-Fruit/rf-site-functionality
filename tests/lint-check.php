@@ -2,12 +2,12 @@
 /**
  * Lint assertions. Run with: studio wp eval-file tests/lint-check.php
  *
- * @package Mc_Functionality
+ * @package Rf_Site_Functionality
  */
 
-require_once dirname( __DIR__ ) . '/includes/class-mc-functionality-php-lint.php';
+require_once dirname( __DIR__ ) . '/includes/class-rf-site-functionality-php-lint.php';
 
-$ok = Mc_Functionality_Php_Lint::check( "<?php\nget_bloginfo( 'name' );\n" );
+$ok = Rf_Site_Functionality_Php_Lint::check( "<?php\nget_bloginfo( 'name' );\n" );
 $samples = array(
 	"<?php\neval( '1' );\n",
 	"<?php\neval ( '1' );\n",
@@ -21,7 +21,7 @@ if ( true !== $ok ) {
 	exit( 1 );
 }
 foreach ( $samples as $sample ) {
-	$bad = Mc_Functionality_Php_Lint::check( $sample );
+	$bad = Rf_Site_Functionality_Php_Lint::check( $sample );
 	if ( ! is_wp_error( $bad ) ) {
 		fwrite( STDERR, "accepted: {$sample}\n" );
 		exit( 1 );

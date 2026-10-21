@@ -2,8 +2,8 @@
 /**
  * Filesystem access for snippet files.
  *
- * @package    Mc_Functionality
- * @subpackage Mc_Functionality/includes
+ * @package    Rf_Site_Functionality
+ * @subpackage Rf_Site_Functionality/includes
  */
 
 /**
@@ -11,7 +11,7 @@
  *
  * @since 1.1.0
  */
-class Mc_Functionality_Snippet_Store {
+class Rf_Site_Functionality_Snippet_Store {
 
 	/**
 	 * Snippet directory, without a trailing slash.
@@ -21,11 +21,11 @@ class Mc_Functionality_Snippet_Store {
 	private $dir;
 
 	/**
-	 * @param string|null $dir Directory override. Null uses MC_FUNCTIONALITY_SNIPPETS_DIR.
+	 * @param string|null $dir Directory override. Null uses RF_SITE_FUNCTIONALITY_SNIPPETS_DIR.
 	 */
 	public function __construct( $dir = null ) {
 		if ( null === $dir ) {
-			$dir = defined( 'MC_FUNCTIONALITY_SNIPPETS_DIR' ) ? MC_FUNCTIONALITY_SNIPPETS_DIR : '';
+			$dir = defined( 'RF_SITE_FUNCTIONALITY_SNIPPETS_DIR' ) ? RF_SITE_FUNCTIONALITY_SNIPPETS_DIR : '';
 		}
 		$this->dir = rtrim( (string) $dir, '/\\' );
 	}
@@ -141,6 +141,28 @@ class Mc_Functionality_Snippet_Store {
 	}
 
 	/**
+	 * Turn safe mode on or off for a user who can manage options.
+	 *
+	 * @param array<string, bool> $capabilities Capability map for the current user.
+	 * @param bool                $disabled     True writes the flag. False clears it.
+	 * @return bool
+	 */
+	public function set_disabled( $capabilities, $disabled ) {
+		if ( ! self::can_clear_flag( $capabilities ) ) {
+			return false;
+		}
+		if ( ! $disabled ) {
+			return $this->clear_flag( $capabilities );
+		}
+		$this->ensure_dir();
+		$path = $this->flag_path();
+		if ( is_file( $path ) ) {
+			return true;
+		}
+		return false !== file_put_contents( $path, '1' );
+	}
+
+	/**
 	 * Whether a path is the directory itself or a file inside it.
 	 *
 	 * @param string $path Absolute or relative path.
@@ -190,7 +212,7 @@ class Mc_Functionality_Snippet_Store {
 		if ( ! is_dir( $this->dir ) ) {
 			return array();
 		}
-		$paths = glob( $this->dir . '/*.mcphp' );
+		$paths = glob( $this->dir . DIRECTORY_SEPARATOR . '*.mcphp' );
 		if ( ! is_array( $paths ) ) {
 			return array();
 		}
@@ -306,7 +328,7 @@ class Mc_Functionality_Snippet_Store {
 			return array();
 		}
 		$snippets = array();
-		$php      = glob( $this->dir . '/*.mcphp' );
+		$php      = glob( $this->dir . DIRECTORY_SEPARATOR . '*.mcphp' );
 		if ( is_array( $php ) ) {
 			foreach ( $php as $path ) {
 				if ( ! $this->is_loadable_php( $path ) ) {
@@ -320,7 +342,7 @@ class Mc_Functionality_Snippet_Store {
 				);
 			}
 		}
-		$disabled = glob( $this->dir . '/*.mcphp.disabled' );
+		$disabled = glob( $this->dir . DIRECTORY_SEPARATOR . '*.mcphp.disabled' );
 		if ( is_array( $disabled ) ) {
 			foreach ( $disabled as $path ) {
 				if ( ! $this->is_inside( $path ) ) {
@@ -350,9 +372,9 @@ class Mc_Functionality_Snippet_Store {
 	 */
 	public function list_rows( $status = '' ) {
 		if ( '' !== $status && ! in_array( $status, array( 'enabled', 'disabled' ), true ) ) {
-			return new WP_Error( 'mc_functionality_invalid_status', 'Status must be enabled or disabled.' );
+			return new WP_Error( 'rf_site_functionality_invalid_status', 'Status must be enabled or disabled.' );
 		}
-		require_once __DIR__ . '/class-mc-functionality-snippet-meta.php';
+		require_once __DIR__ . '/class-rf-site-functionality-snippet-meta.php';
 		$rows = array();
 		foreach ( $this->all_snippets() as $snippet ) {
 			if ( '' !== $status && $snippet['status'] !== $status ) {
@@ -365,7 +387,7 @@ class Mc_Functionality_Snippet_Store {
 					$content = $loaded;
 				}
 			}
-			$meta   = Mc_Functionality_Snippet_Meta::parse( $content );
+			$meta   = Rf_Site_Functionality_Snippet_Meta::parse( $content );
 			$rows[] = array(
 				'filename'    => (string) $snippet['filename'],
 				'status'      => (string) $snippet['status'],
@@ -402,14 +424,14 @@ class Mc_Functionality_Snippet_Store {
 		}
 		$content = file_get_contents( $path );
 		if ( false === $content ) {
-			return new WP_Error( 'mc_functionality_snippet_data_unavailable', 'Unable to read the snippet file.' );
+			return new WP_Error( 'rf_site_functionality_snippet_data_unavailable', 'Unable to read the snippet file.' );
 		}
-		require_once __DIR__ . '/class-mc-functionality-snippet-meta.php';
+		require_once __DIR__ . '/class-rf-site-functionality-snippet-meta.php';
 		return array(
 			'filename' => $filename,
 			'status'   => $this->is_enabled( $filename ) ? 'enabled' : 'disabled',
 			'content'  => $content,
-			'header'   => Mc_Functionality_Snippet_Meta::parse( $content ),
+			'header'   => Rf_Site_Functionality_Snippet_Meta::parse( $content ),
 		);
 	}
 
@@ -427,24 +449,24 @@ class Mc_Functionality_Snippet_Store {
 			return $filename;
 		}
 		if ( ! $this->ensure_dir() ) {
-			return new WP_Error( 'mc_functionality_not_initialized', 'Snippet directory is not available.' );
+			return new WP_Error( 'rf_site_functionality_not_initialized', 'Snippet directory is not available.' );
 		}
 		$paths    = $this->file_paths( $filename );
 		$enabled  = $paths['enabled'];
 		$disabled = $paths['disabled'];
 		if ( is_file( $enabled ) || is_file( $disabled ) ) {
-			return new WP_Error( 'mc_functionality_invalid_filename', 'A snippet with this filename already exists.' );
+			return new WP_Error( 'rf_site_functionality_invalid_filename', 'A snippet with this filename already exists.' );
 		}
 		$content = $this->prepare_source( $content );
 		if ( is_wp_error( $content ) ) {
 			return $content;
 		}
 		if ( false === file_put_contents( $disabled, $content ) ) {
-			return new WP_Error( 'mc_functionality_snippet_data_unavailable', 'Unable to write the snippet file.' );
+			return new WP_Error( 'rf_site_functionality_snippet_data_unavailable', 'Unable to write the snippet file.' );
 		}
 		if ( ! $this->is_inside( $disabled ) ) {
 			unlink( $disabled );
-			return new WP_Error( 'mc_functionality_invalid_filename', 'Filename must be a single snippet file name.' );
+			return new WP_Error( 'rf_site_functionality_invalid_filename', 'Filename must be a single snippet file name.' );
 		}
 		return array(
 			'filename' => $filename,
@@ -466,18 +488,18 @@ class Mc_Functionality_Snippet_Store {
 			return $filename;
 		}
 		if ( $this->is_enabled( $filename ) ) {
-			return new WP_Error( 'mc_functionality_invalid_status', 'Disable the snippet before updating it.' );
+			return new WP_Error( 'rf_site_functionality_invalid_status', 'Disable the snippet before updating it.' );
 		}
 		$disabled = $this->file_paths( $filename )['disabled'];
 		if ( ! is_file( $disabled ) || ! $this->is_inside( $disabled ) ) {
-			return new WP_Error( 'mc_functionality_invalid_filename', 'Snippet file was not found.' );
+			return new WP_Error( 'rf_site_functionality_invalid_filename', 'Snippet file was not found.' );
 		}
 		$content = $this->prepare_source( $content );
 		if ( is_wp_error( $content ) ) {
 			return $content;
 		}
 		if ( false === file_put_contents( $disabled, $content ) ) {
-			return new WP_Error( 'mc_functionality_snippet_data_unavailable', 'Unable to write the snippet file.' );
+			return new WP_Error( 'rf_site_functionality_snippet_data_unavailable', 'Unable to write the snippet file.' );
 		}
 		return array(
 			'filename' => $filename,
@@ -509,15 +531,15 @@ class Mc_Functionality_Snippet_Store {
 				continue;
 			}
 			if ( ! $this->is_inside( $path ) ) {
-				return new WP_Error( 'mc_functionality_invalid_filename', 'Filename must be a single snippet file name.' );
+				return new WP_Error( 'rf_site_functionality_invalid_filename', 'Filename must be a single snippet file name.' );
 			}
 			if ( ! unlink( $path ) ) {
-				return new WP_Error( 'mc_functionality_snippet_data_unavailable', 'Unable to delete the snippet file.' );
+				return new WP_Error( 'rf_site_functionality_snippet_data_unavailable', 'Unable to delete the snippet file.' );
 			}
 			$removed = true;
 		}
 		if ( ! $removed ) {
-			return new WP_Error( 'mc_functionality_invalid_filename', 'Snippet file was not found.' );
+			return new WP_Error( 'rf_site_functionality_invalid_filename', 'Snippet file was not found.' );
 		}
 		return array(
 			'filename' => $filename,
@@ -596,11 +618,11 @@ class Mc_Functionality_Snippet_Store {
 	 */
 	private function normalize_php_name( $filename ) {
 		if ( ! is_string( $filename ) || '' === trim( $filename ) ) {
-			return new WP_Error( 'mc_functionality_missing_filename', 'A filename is required.' );
+			return new WP_Error( 'rf_site_functionality_missing_filename', 'A filename is required.' );
 		}
 		$filename = str_replace( '\\', '/', $filename );
 		if ( basename( $filename ) !== $filename ) {
-			return new WP_Error( 'mc_functionality_invalid_filename', 'Filename must be a single snippet file name.' );
+			return new WP_Error( 'rf_site_functionality_invalid_filename', 'Filename must be a single snippet file name.' );
 		}
 		if ( '.disabled' === substr( $filename, -9 ) ) {
 			$filename = substr( $filename, 0, -9 );
@@ -612,7 +634,7 @@ class Mc_Functionality_Snippet_Store {
 			$filename .= '.php';
 		}
 		if ( ! $this->is_safe_filename( $filename ) ) {
-			return new WP_Error( 'mc_functionality_invalid_filename', 'Filename must be a single snippet file name.' );
+			return new WP_Error( 'rf_site_functionality_invalid_filename', 'Filename must be a single snippet file name.' );
 		}
 		return $filename;
 	}
@@ -634,7 +656,7 @@ class Mc_Functionality_Snippet_Store {
 		if ( is_file( $enabled ) && $this->is_inside( $enabled ) ) {
 			return $enabled;
 		}
-		return new WP_Error( 'mc_functionality_invalid_filename', 'Snippet file was not found.' );
+		return new WP_Error( 'rf_site_functionality_invalid_filename', 'Snippet file was not found.' );
 	}
 
 	/**
@@ -646,15 +668,15 @@ class Mc_Functionality_Snippet_Store {
 	 */
 	private function prepare_source( $content ) {
 		if ( ! is_string( $content ) ) {
-			return new WP_Error( 'mc_functionality_missing_content', 'Snippet content is required.' );
+			return new WP_Error( 'rf_site_functionality_missing_content', 'Snippet content is required.' );
 		}
 		if ( strlen( $content ) > self::MAX_SOURCE_BYTES ) {
-			return new WP_Error( 'mc_functionality_invalid_content', 'Snippet content must be 256 KB or smaller.' );
+			return new WP_Error( 'rf_site_functionality_invalid_content', 'Snippet content must be 256 KB or smaller.' );
 		}
-		require_once __DIR__ . '/class-mc-functionality-snippet-meta.php';
-		require_once __DIR__ . '/class-mc-functionality-php-lint.php';
-		$content = Mc_Functionality_Snippet_Meta::ensure_guard( $content );
-		$lint    = Mc_Functionality_Php_Lint::check( $content );
+		require_once __DIR__ . '/class-rf-site-functionality-snippet-meta.php';
+		require_once __DIR__ . '/class-rf-site-functionality-php-lint.php';
+		$content = Rf_Site_Functionality_Snippet_Meta::ensure_guard( $content );
+		$lint    = Rf_Site_Functionality_Php_Lint::check( $content );
 		if ( is_wp_error( $lint ) ) {
 			return $lint;
 		}
@@ -672,7 +694,7 @@ class Mc_Functionality_Snippet_Store {
 		}
 		$files = array();
 		foreach ( array( 'css', 'js' ) as $ext ) {
-			$paths = glob( $this->dir . '/*.' . $ext );
+			$paths = glob( $this->dir . DIRECTORY_SEPARATOR . '*.' . $ext );
 			if ( ! is_array( $paths ) ) {
 				continue;
 			}

@@ -1,114 +1,70 @@
-=== Plugin Name ===
-Contributors: (this should be a list of wordpress.org userid's)
+=== Site Functionality ===
+Contributors: mattcromwell
 Donate link: https://www.mattcromwell.com/
-Tags: comments, spam
-Requires at least: 3.0.1
-Tested up to: 3.4
-Stable tag: 4.3
+Tags: snippets, code, php
+Requires at least: 6.0
+Tested up to: 7.1
+Stable tag: 2.0.0
+Requires PHP: 7.4
 License: GPLv2 or later
-License URI: http://www.gnu.org/licenses/gpl-2.0.html
+License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-Here is a short description of the plugin.  This should be no more than 150 characters.  No markup here.
+File-based PHP snippets that load from disk and turn themselves off when they fail.
 
 == Description ==
 
-This is the long description.  No limit, and you can use Markdown (as well as in the following sections).
-
-For backwards compatibility, if this section is missing, the full length of the short description will be used, and
-Markdown parsed.
-
-A few notes about the sections above:
-
-*   "Contributors" is a comma separated list of wp.org/wp-plugins.org usernames
-*   "Tags" is a comma separated list of tags that apply to the plugin
-*   "Requires at least" is the lowest version that the plugin will work on
-*   "Tested up to" is the highest version that you've *successfully used to test the plugin*. Note that it might work on
-higher versions... this is just the highest one you've verified.
-*   Stable tag should indicate the Subversion "tag" of the latest stable version, or "trunk," if you use `/trunk/` for
-stable.
-
-    Note that the `readme.txt` of the stable tag is the one that is considered the defining one for the plugin, so
-if the `/trunk/readme.txt` file says that the stable tag is `4.3`, then it is `/tags/4.3/readme.txt` that'll be used
-for displaying information about the plugin.  In this situation, the only thing considered from the trunk `readme.txt`
-is the stable tag pointer.  Thus, if you develop in trunk, you can update the trunk `readme.txt` to reflect changes in
-your in-development version, without having that information incorrectly disclosed about the current stable version
-that lacks those changes -- as long as the trunk's `readme.txt` points to the correct stable tag.
-
-    If no stable tag is provided, it is assumed that trunk is stable, but you should specify "trunk" if that's where
-you put the stable version, in order to eliminate any doubt.
+Site Functionality keeps small pieces of PHP as files beside WordPress. Snippets load early, and a fatal error disables the file that caused it instead of taking the site down.
 
 == Installation ==
 
-This section describes how to install the plugin and get it working.
-
-e.g.
-
-1. Upload `mc-functionality.php` to the `/wp-content/plugins/` directory
-1. Activate the plugin through the 'Plugins' menu in WordPress
-1. Place `<?php do_action('plugin_name_hook'); ?>` in your templates
-
-== Frequently Asked Questions ==
-
-= A question that someone might have =
-
-An answer to that question.
-
-= What about foo bar? =
-
-Answer to foo bar dilemma.
-
-== Screenshots ==
-
-1. This screen shot description corresponds to screenshot-1.(png|jpg|jpeg|gif). Note that the screenshot is taken from
-the /assets directory or the directory that contains the stable readme.txt (tags or trunk). Screenshots in the /assets
-directory take precedence. For example, `/assets/screenshot-1.png` would win over `/tags/4.3/screenshot-1.png`
-(or jpg, jpeg, gif).
-2. This is the second screen shot
+1. Upload the `rf-site-functionality` folder to `/wp-content/plugins/`.
+2. Activate Site Functionality from the Plugins screen.
 
 == Changelog ==
 
-= 1.0 =
-* A change since the previous version.
-* Another change.
+= 2.0.0 =
+Released 2026-10-21.
 
-= 0.5 =
-* List versions from most recent at top to oldest at bottom.
+Site Functionality keeps small pieces of PHP as files beside WordPress. A fatal error disables the file that caused it instead of taking the site down.
+
+**Changed**
+
+* **Breaking:** The plugin name is Site Functionality and the slug is `rf-site-functionality`. Activate this folder as a new plugin. Snippet files already stored in the `mc-snippets` directory keep loading. Ability names now start with `rf-site-functionality/`.
+* The plugin screen uses the Roots and Fruit layout. CodeMirror Theme has a live preview, and Safe Mode is a switch that stops every snippet or turns them back on.
+* PHP memory, execution time, the snippet directory, and safe mode are reported on Tools → Site Health. A time limit of 0, or a memory limit of -1, is reported as no limit.
+
+= 1.2.2 =
+Released 2026-09-28.
+
+The snippet lint check now reads PHP tokens, and the admin Enable action runs it before renaming a file.
+
+**Changed**
+
+* Turning a disabled snippet on checks the source first. A file that calls eval, exec, system, shell_exec, passthru, or assert, or that uses include, require, or backticks, stays disabled and shows the error. A space before the parenthesis does not get past the check. Saving a snippet uses the same check.
+* A call stored in a variable, such as `$fn()`, is still allowed. So is `call_user_func()`. This is the obvious-call check, not a sandbox.
+
+= 1.2.1 =
+Released 2026-09-28.
+
+Snippets are no longer published from `wp-content/mc-snippets`.
+
+**Changed**
+
+* **Breaking:** The old safe-mode key is deleted. A new key is written in the private folder. An old safe-mode bookmark will not turn snippets off.
+* On a normal host the folder sits next to the WordPress directory and is named `mc-snippets-` plus a short hash of the site path. On WordPress Studio, PHP cannot write next to the site, so the folder is in the system temp directory. Set `RF_SITE_FUNCTIONALITY_SNIPPETS_DIR` if you want a permanent directory PHP is allowed to use.
+* Files on disk end in `.mcphp`. The editor and the abilities still call a snippet `example.php`.
+* A fatal error renames only the snippet that was running. A fatal in a theme or plugin file stays where it is.
+* PHP lint runs on every `.php` save and on enable, including a file whose header says css or js. The direct-access guard is inserted as the first real statement.
+
+= 1.2.0 =
+Released 2026-09-28.
+
+**Added**
+
+* Snippet abilities for listing, reading, and changing snippet files.
+
+**Fixed**
+
+* Unconditional snippets load when plugin files are already available, and before the theme.
 
 == Upgrade Notice ==
-
-= 1.0 =
-Upgrade notices describe the reason a user should upgrade.  No more than 300 characters.
-
-= 0.5 =
-This version fixes a security related bug.  Upgrade immediately.
-
-== Arbitrary section ==
-
-You may provide arbitrary sections, in the same format as the ones above.  This may be of use for extremely complicated
-plugins where more information needs to be conveyed that doesn't fit into the categories of "description" or
-"installation."  Arbitrary sections will be shown below the built-in sections outlined above.
-
-== A brief Markdown Example ==
-
-Ordered list:
-
-1. Some feature
-1. Another feature
-1. Something else about the plugin
-
-Unordered list:
-
-* something
-* something else
-* third thing
-
-Here's a link to [WordPress](http://wordpress.org/ "Your favorite software") and one to [Markdown's Syntax Documentation][markdown syntax].
-Titles are optional, naturally.
-
-[markdown syntax]: http://daringfireball.net/projects/markdown/syntax
-            "Markdown is what the parser uses to process much of the readme file"
-
-Markdown uses email style notation for blockquotes and I've been told:
-> Asterisks for *emphasis*. Double it up  for **strong**.
-
-`<?php code(); // goes in backticks ?>`

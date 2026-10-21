@@ -2,8 +2,8 @@
 /**
  * Snippet file headers.
  *
- * @package    Mc_Functionality
- * @subpackage Mc_Functionality/includes
+ * @package    Rf_Site_Functionality
+ * @subpackage Rf_Site_Functionality/includes
  */
 
 /**
@@ -11,7 +11,7 @@
  *
  * @since 1.1.0
  */
-class Mc_Functionality_Snippet_Meta {
+class Rf_Site_Functionality_Snippet_Meta {
 
 	/**
 	 * Parse header fields. Missing keys keep the historical defaults.

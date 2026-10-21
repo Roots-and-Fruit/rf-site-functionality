@@ -2,8 +2,8 @@
 /**
  * Abilities API registration for snippet files.
  *
- * @package    Mc_Functionality
- * @subpackage Mc_Functionality/includes
+ * @package    Rf_Site_Functionality
+ * @subpackage Rf_Site_Functionality/includes
  */
 
 /**
@@ -11,7 +11,7 @@
  *
  * @since 1.2.0
  */
-class Mc_Functionality_Abilities {
+class Rf_Site_Functionality_Abilities {
 
 	/**
 	 * Hook registration, the REST lock, and the capability upgrade.
@@ -36,7 +36,7 @@ class Mc_Functionality_Abilities {
 	 * @return void
 	 */
 	public static function maybe_grant_caps() {
-		if ( '1' === (string) get_option( 'mc_functionality_caps_version' ) ) {
+		if ( '1' === (string) get_option( 'rf_site_functionality_caps_version' ) ) {
 			return;
 		}
 		self::grant_caps();
@@ -55,7 +55,7 @@ class Mc_Functionality_Abilities {
 			$role->add_cap( 'edit_mc_snippets' );
 			$role->add_cap( 'delete_mc_snippets' );
 		}
-		update_option( 'mc_functionality_caps_version', '1' );
+		update_option( 'rf_site_functionality_caps_version', '1' );
 	}
 
 	/**
@@ -67,7 +67,7 @@ class Mc_Functionality_Abilities {
 	 * @return array<string, mixed>
 	 */
 	public static function force_rest_off( $args, $name ) {
-		if ( ! is_string( $name ) || 0 !== strpos( $name, 'mc-functionality/' ) ) {
+		if ( ! is_string( $name ) || 0 !== strpos( $name, 'rf-site-functionality/' ) ) {
 			return $args;
 		}
 		if ( ! isset( $args['meta'] ) || ! is_array( $args['meta'] ) ) {
@@ -83,10 +83,10 @@ class Mc_Functionality_Abilities {
 	 */
 	public static function register_category() {
 		wp_register_ability_category(
-			'mc-functionality',
+			'rf-site-functionality',
 			array(
-				'label'       => __( 'MC Functionality', 'mc-functionality' ),
-				'description' => __( 'List, read, and change file-based snippets.', 'mc-functionality' ),
+				'label'       => __( 'Site Functionality', 'rf-site-functionality' ),
+				'description' => __( 'List, read, and change file-based snippets.', 'rf-site-functionality' ),
 			)
 		);
 	}
@@ -178,16 +178,16 @@ class Mc_Functionality_Abilities {
 			return $read;
 		}
 		if ( 'enabled' !== $read['status'] ) {
-			require_once __DIR__ . '/class-mc-functionality-php-lint.php';
-			$lint = Mc_Functionality_Php_Lint::check( $read['content'] );
+			require_once __DIR__ . '/class-rf-site-functionality-php-lint.php';
+			$lint = Rf_Site_Functionality_Php_Lint::check( $read['content'] );
 			if ( is_wp_error( $lint ) ) {
 				return $lint;
 			}
 			if ( ! $store->enable( $read['filename'] ) ) {
-				return new WP_Error( 'mc_functionality_snippet_data_unavailable', __( 'Unable to enable the snippet.', 'mc-functionality' ) );
+				return new WP_Error( 'rf_site_functionality_snippet_data_unavailable', __( 'Unable to enable the snippet.', 'rf-site-functionality' ) );
 			}
 		}
-		self::changed( 'mc-functionality/enable-snippet', $read['filename'] );
+		self::changed( 'rf-site-functionality/enable-snippet', $read['filename'] );
 		return array(
 			'filename' => $read['filename'],
 			'status'   => 'enabled',
@@ -210,9 +210,9 @@ class Mc_Functionality_Abilities {
 			return $read;
 		}
 		if ( ! $store->disable( $read['filename'] ) ) {
-			return new WP_Error( 'mc_functionality_snippet_data_unavailable', __( 'Unable to disable the snippet.', 'mc-functionality' ) );
+			return new WP_Error( 'rf_site_functionality_snippet_data_unavailable', __( 'Unable to disable the snippet.', 'rf-site-functionality' ) );
 		}
-		self::changed( 'mc-functionality/disable-snippet', $read['filename'] );
+		self::changed( 'rf-site-functionality/disable-snippet', $read['filename'] );
 		return array(
 			'filename' => $read['filename'],
 			'status'   => 'disabled',
@@ -237,7 +237,7 @@ class Mc_Functionality_Abilities {
 		if ( is_wp_error( $result ) ) {
 			return $result;
 		}
-		self::changed( 'mc-functionality/create-snippet', $result['filename'] );
+		self::changed( 'rf-site-functionality/create-snippet', $result['filename'] );
 		return $result;
 	}
 
@@ -259,7 +259,7 @@ class Mc_Functionality_Abilities {
 		if ( is_wp_error( $result ) ) {
 			return $result;
 		}
-		self::changed( 'mc-functionality/update-snippet', $result['filename'] );
+		self::changed( 'rf-site-functionality/update-snippet', $result['filename'] );
 		return $result;
 	}
 
@@ -277,7 +277,7 @@ class Mc_Functionality_Abilities {
 		if ( is_wp_error( $result ) ) {
 			return $result;
 		}
-		self::changed( 'mc-functionality/delete-snippet', $result['filename'] );
+		self::changed( 'rf-site-functionality/delete-snippet', $result['filename'] );
 		return $result;
 	}
 
@@ -285,7 +285,7 @@ class Mc_Functionality_Abilities {
 	 * Snippet store for ability calls.
 	 *
 	 * @since 1.2.0
-	 * @return Mc_Functionality_Snippet_Store
+	 * @return Rf_Site_Functionality_Snippet_Store
 	 */
 	public static function store() {
 		/**
@@ -293,13 +293,13 @@ class Mc_Functionality_Abilities {
 		 *
 		 * @since 1.2.0
 		 *
-		 * @param Mc_Functionality_Snippet_Store|null $store Store instance. Null uses the default directory.
+		 * @param Rf_Site_Functionality_Snippet_Store|null $store Store instance. Null uses the default directory.
 		 */
-		$store = apply_filters( 'mc_functionality_snippet_store', null );
-		if ( $store instanceof Mc_Functionality_Snippet_Store ) {
+		$store = apply_filters( 'rf_site_functionality_snippet_store', null );
+		if ( $store instanceof Rf_Site_Functionality_Snippet_Store ) {
 			return $store;
 		}
-		return new Mc_Functionality_Snippet_Store();
+		return new Rf_Site_Functionality_Snippet_Store();
 	}
 
 	/**
@@ -308,11 +308,11 @@ class Mc_Functionality_Abilities {
 	 */
 	private static function register_list() {
 		wp_register_ability(
-			'mc-functionality/list-snippets',
+			'rf-site-functionality/list-snippets',
 			array(
-				'label'               => __( 'List snippets', 'mc-functionality' ),
-				'description'         => __( 'Lists snippet files with filename, status, type, and run context.', 'mc-functionality' ),
-				'category'            => 'mc-functionality',
+				'label'               => __( 'List snippets', 'rf-site-functionality' ),
+				'description'         => __( 'Lists snippet files with filename, status, type, and run context.', 'rf-site-functionality' ),
+				'category'            => 'rf-site-functionality',
 				'input_schema'        => array(
 					'type'       => 'object',
 					'default'    => array(),
@@ -320,7 +320,7 @@ class Mc_Functionality_Abilities {
 						'status' => array(
 							'type'        => 'string',
 							'enum'        => array( 'enabled', 'disabled' ),
-							'description' => __( 'Limit the list to enabled or disabled snippets.', 'mc-functionality' ),
+							'description' => __( 'Limit the list to enabled or disabled snippets.', 'rf-site-functionality' ),
 						),
 					),
 				),
@@ -352,11 +352,11 @@ class Mc_Functionality_Abilities {
 	 */
 	private static function register_get() {
 		wp_register_ability(
-			'mc-functionality/get-snippet',
+			'rf-site-functionality/get-snippet',
 			array(
-				'label'               => __( 'Read snippet', 'mc-functionality' ),
-				'description'         => __( 'Returns one snippet source file and its parsed header.', 'mc-functionality' ),
-				'category'            => 'mc-functionality',
+				'label'               => __( 'Read snippet', 'rf-site-functionality' ),
+				'description'         => __( 'Returns one snippet source file and its parsed header.', 'rf-site-functionality' ),
+				'category'            => 'rf-site-functionality',
 				'input_schema'        => self::filename_schema(),
 				'output_schema'       => self::read_schema(),
 				'meta'                => self::meta( true, false, true ),
@@ -372,11 +372,11 @@ class Mc_Functionality_Abilities {
 	 */
 	private static function register_enable() {
 		wp_register_ability(
-			'mc-functionality/enable-snippet',
+			'rf-site-functionality/enable-snippet',
 			array(
-				'label'               => __( 'Enable snippet', 'mc-functionality' ),
-				'description'         => __( 'Enables a disabled snippet after the source passes the PHP lint check.', 'mc-functionality' ),
-				'category'            => 'mc-functionality',
+				'label'               => __( 'Enable snippet', 'rf-site-functionality' ),
+				'description'         => __( 'Enables a disabled snippet after the source passes the PHP lint check.', 'rf-site-functionality' ),
+				'category'            => 'rf-site-functionality',
 				'input_schema'        => self::filename_schema(),
 				'output_schema'       => self::status_schema( array( 'enabled' ) ),
 				'meta'                => self::meta( false, true, true ),
@@ -392,11 +392,11 @@ class Mc_Functionality_Abilities {
 	 */
 	private static function register_disable() {
 		wp_register_ability(
-			'mc-functionality/disable-snippet',
+			'rf-site-functionality/disable-snippet',
 			array(
-				'label'               => __( 'Disable snippet', 'mc-functionality' ),
-				'description'         => __( 'Disables a snippet by renaming it so it does not run.', 'mc-functionality' ),
-				'category'            => 'mc-functionality',
+				'label'               => __( 'Disable snippet', 'rf-site-functionality' ),
+				'description'         => __( 'Disables a snippet by renaming it so it does not run.', 'rf-site-functionality' ),
+				'category'            => 'rf-site-functionality',
 				'input_schema'        => self::filename_schema(),
 				'output_schema'       => self::status_schema( array( 'disabled' ) ),
 				'meta'                => self::meta( false, false, true ),
@@ -412,11 +412,11 @@ class Mc_Functionality_Abilities {
 	 */
 	private static function register_create() {
 		wp_register_ability(
-			'mc-functionality/create-snippet',
+			'rf-site-functionality/create-snippet',
 			array(
-				'label'               => __( 'Create snippet', 'mc-functionality' ),
-				'description'         => __( 'Creates a snippet file in the disabled state.', 'mc-functionality' ),
-				'category'            => 'mc-functionality',
+				'label'               => __( 'Create snippet', 'rf-site-functionality' ),
+				'description'         => __( 'Creates a snippet file in the disabled state.', 'rf-site-functionality' ),
+				'category'            => 'rf-site-functionality',
 				'input_schema'        => self::write_schema(),
 				'output_schema'       => self::status_schema( array( 'disabled' ) ),
 				'meta'                => self::meta( false, false, false ),
@@ -432,11 +432,11 @@ class Mc_Functionality_Abilities {
 	 */
 	private static function register_update() {
 		wp_register_ability(
-			'mc-functionality/update-snippet',
+			'rf-site-functionality/update-snippet',
 			array(
-				'label'               => __( 'Update snippet', 'mc-functionality' ),
-				'description'         => __( 'Replaces the source of a disabled snippet.', 'mc-functionality' ),
-				'category'            => 'mc-functionality',
+				'label'               => __( 'Update snippet', 'rf-site-functionality' ),
+				'description'         => __( 'Replaces the source of a disabled snippet.', 'rf-site-functionality' ),
+				'category'            => 'rf-site-functionality',
 				'input_schema'        => self::write_schema(),
 				'output_schema'       => self::status_schema( array( 'disabled' ) ),
 				'meta'                => self::meta( false, true, true ),
@@ -452,11 +452,11 @@ class Mc_Functionality_Abilities {
 	 */
 	private static function register_delete() {
 		wp_register_ability(
-			'mc-functionality/delete-snippet',
+			'rf-site-functionality/delete-snippet',
 			array(
-				'label'               => __( 'Delete snippet', 'mc-functionality' ),
-				'description'         => __( 'Deletes one snippet file.', 'mc-functionality' ),
-				'category'            => 'mc-functionality',
+				'label'               => __( 'Delete snippet', 'rf-site-functionality' ),
+				'description'         => __( 'Deletes one snippet file.', 'rf-site-functionality' ),
+				'category'            => 'rf-site-functionality',
 				'input_schema'        => self::filename_schema(),
 				'output_schema'       => self::status_schema( array( 'deleted' ) ),
 				'meta'                => self::meta( false, true, false ),
@@ -499,7 +499,7 @@ class Mc_Functionality_Abilities {
 			'properties' => array(
 				'filename' => array(
 					'type'        => 'string',
-					'description' => __( 'Snippet file name, such as example.php.', 'mc-functionality' ),
+					'description' => __( 'Snippet file name, such as example.php.', 'rf-site-functionality' ),
 				),
 			),
 		);
@@ -514,7 +514,7 @@ class Mc_Functionality_Abilities {
 		$schema['required'][]            = 'content';
 		$schema['properties']['content'] = array(
 			'type'        => 'string',
-			'description' => __( 'PHP source to write.', 'mc-functionality' ),
+			'description' => __( 'PHP source to write.', 'rf-site-functionality' ),
 		);
 		return $schema;
 	}
@@ -592,7 +592,7 @@ class Mc_Functionality_Abilities {
 	private static function filename_from( $input ) {
 		$args = self::args( $input );
 		if ( ! isset( $args['filename'] ) || ! is_string( $args['filename'] ) || '' === $args['filename'] ) {
-			return new WP_Error( 'mc_functionality_missing_filename', __( 'A filename is required.', 'mc-functionality' ) );
+			return new WP_Error( 'rf_site_functionality_missing_filename', __( 'A filename is required.', 'rf-site-functionality' ) );
 		}
 		return $args['filename'];
 	}
@@ -605,7 +605,7 @@ class Mc_Functionality_Abilities {
 	private static function content_from( $input ) {
 		$args = self::args( $input );
 		if ( ! isset( $args['content'] ) || ! is_string( $args['content'] ) ) {
-			return new WP_Error( 'mc_functionality_missing_content', __( 'Snippet content is required.', 'mc-functionality' ) );
+			return new WP_Error( 'rf_site_functionality_missing_content', __( 'Snippet content is required.', 'rf-site-functionality' ) );
 		}
 		return $args['content'];
 	}
@@ -642,7 +642,7 @@ class Mc_Functionality_Abilities {
 		 * @param array{user_id: int, ability: string, filename: string} $change Change record.
 		 */
 		do_action(
-			'mc_functionality_snippet_changed',
+			'rf_site_functionality_snippet_changed',
 			array(
 				'user_id'  => get_current_user_id(),
 				'ability'  => $ability,

@@ -6,8 +6,8 @@
  * @link       https://www.mattcromwell.com
  * @since      1.0.0
  *
- * @package    Mc_Functionality
- * @subpackage Mc_Functionality/includes
+ * @package    Rf_Site_Functionality
+ * @subpackage Rf_Site_Functionality/includes
  */
 
 /**
@@ -17,11 +17,11 @@
  * the plugin, and register them with the WordPress API. Call the
  * run function to execute the list of actions and filters.
  *
- * @package    Mc_Functionality
- * @subpackage Mc_Functionality/includes
+ * @package    Rf_Site_Functionality
+ * @subpackage Rf_Site_Functionality/includes
  * @author     Matt Cromwell <info@mattcromwell.com>
  */
-class Mc_Functionality_Loader {
+class Rf_Site_Functionality_Loader {
 
 	/**
 	 * The array of actions registered with WordPress.

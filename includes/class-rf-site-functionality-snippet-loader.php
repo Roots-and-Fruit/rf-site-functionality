@@ -2,8 +2,8 @@
 /**
  * Loads snippet files from the store.
  *
- * @package    Mc_Functionality
- * @subpackage Mc_Functionality/includes
+ * @package    Rf_Site_Functionality
+ * @subpackage Rf_Site_Functionality/includes
  */
 
 /**
@@ -11,7 +11,7 @@
  *
  * @since 1.0.0
  */
-class Mc_Functionality_Snippet_Loader {
+class Rf_Site_Functionality_Snippet_Loader {
 
 	const FATAL_ERROR_TYPES = array( E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR, E_USER_ERROR );
 
@@ -26,7 +26,7 @@ class Mc_Functionality_Snippet_Loader {
 	public $enqueued_scripts = array();
 
 	/**
-	 * @var Mc_Functionality_Snippet_Store
+	 * @var Rf_Site_Functionality_Snippet_Store
 	 */
 	private $store;
 
@@ -53,8 +53,8 @@ class Mc_Functionality_Snippet_Loader {
 	 * @param string|null $dir Optional directory. Tests pass a temp dir.
 	 */
 	public function __construct( $dir = null ) {
-		require_once __DIR__ . '/class-mc-functionality-snippet-store.php';
-		$this->store = new Mc_Functionality_Snippet_Store( $dir );
+		require_once __DIR__ . '/class-rf-site-functionality-snippet-store.php';
+		$this->store = new Rf_Site_Functionality_Snippet_Store( $dir );
 		self::$store_dir = $this->store->get_dir();
 		$this->register_shutdown();
 	}
@@ -94,7 +94,7 @@ class Mc_Functionality_Snippet_Loader {
 	 * @return string
 	 */
 	public function render_shortcode( $atts ) {
-		require_once __DIR__ . '/class-mc-functionality-snippet-meta.php';
+		require_once __DIR__ . '/class-rf-site-functionality-snippet-meta.php';
 		$id = '';
 		if ( is_array( $atts ) && isset( $atts['id'] ) ) {
 			$id = (string) $atts['id'];
@@ -108,7 +108,7 @@ class Mc_Functionality_Snippet_Loader {
 			return '';
 		}
 		$path = $paths['enabled'];
-		$meta = Mc_Functionality_Snippet_Meta::parse( (string) file_get_contents( $path ) );
+		$meta = Rf_Site_Functionality_Snippet_Meta::parse( (string) file_get_contents( $path ) );
 		if ( 'content' !== $meta['type'] ) {
 			return '';
 		}
@@ -133,7 +133,7 @@ class Mc_Functionality_Snippet_Loader {
 		if ( $this->store->is_disabled() ) {
 			return;
 		}
-		require_once __DIR__ . '/class-mc-functionality-snippet-meta.php';
+		require_once __DIR__ . '/class-rf-site-functionality-snippet-meta.php';
 		if ( null === $context ) {
 			$context = self::current_context();
 		}
@@ -145,13 +145,13 @@ class Mc_Functionality_Snippet_Loader {
 		usort(
 			$files,
 			function ( $a, $b ) {
-				$meta_a = Mc_Functionality_Snippet_Meta::parse( (string) file_get_contents( $a ) );
-				$meta_b = Mc_Functionality_Snippet_Meta::parse( (string) file_get_contents( $b ) );
+				$meta_a = Rf_Site_Functionality_Snippet_Meta::parse( (string) file_get_contents( $a ) );
+				$meta_b = Rf_Site_Functionality_Snippet_Meta::parse( (string) file_get_contents( $b ) );
 				return $meta_a['priority'] <=> $meta_b['priority'];
 			}
 		);
 		foreach ( $files as $path ) {
-			$meta = Mc_Functionality_Snippet_Meta::parse( (string) file_get_contents( $path ) );
+			$meta = Rf_Site_Functionality_Snippet_Meta::parse( (string) file_get_contents( $path ) );
 			if ( 'php' !== $meta['type'] && '' !== $meta['type'] ) {
 				continue;
 			}
@@ -162,7 +162,7 @@ class Mc_Functionality_Snippet_Loader {
 				);
 				if ( function_exists( 'add_action' ) ) {
 					$hook = isset( $meta['hook'] ) ? (string) $meta['hook'] : '';
-					if ( ! Mc_Functionality_Snippet_Meta::is_allowed_hook( $hook ) || 'plugins_loaded' === $hook ) {
+					if ( ! Rf_Site_Functionality_Snippet_Meta::is_allowed_hook( $hook ) || 'plugins_loaded' === $hook ) {
 						$hook = 'init';
 					}
 					add_action(
@@ -189,9 +189,9 @@ class Mc_Functionality_Snippet_Loader {
 	 * @return void
 	 */
 	public function run_scheduled( $context ) {
-		require_once __DIR__ . '/class-mc-functionality-snippet-meta.php';
+		require_once __DIR__ . '/class-rf-site-functionality-snippet-meta.php';
 		foreach ( $this->scheduled as $item ) {
-			if ( ! Mc_Functionality_Snippet_Meta::matches( $item['meta'], $context ) ) {
+			if ( ! Rf_Site_Functionality_Snippet_Meta::matches( $item['meta'], $context ) ) {
 				continue;
 			}
 			if ( ! self::context_allows( $item['meta'], $context ) ) {
@@ -206,14 +206,14 @@ class Mc_Functionality_Snippet_Loader {
 	 * @return bool
 	 */
 	private static function should_defer( $meta ) {
-		if ( Mc_Functionality_Snippet_Meta::has_condition( $meta ) ) {
+		if ( Rf_Site_Functionality_Snippet_Meta::has_condition( $meta ) ) {
 			return true;
 		}
 		$hook = isset( $meta['hook'] ) ? (string) $meta['hook'] : '';
 		if ( '' === $hook ) {
 			return false;
 		}
-		if ( ! Mc_Functionality_Snippet_Meta::is_allowed_hook( $hook ) ) {
+		if ( ! Rf_Site_Functionality_Snippet_Meta::is_allowed_hook( $hook ) ) {
 			return false;
 		}
 		return 'plugins_loaded' !== $hook;
@@ -272,13 +272,13 @@ class Mc_Functionality_Snippet_Loader {
 	 * @return void
 	 */
 	public function include_if_matched( $path ) {
-		require_once __DIR__ . '/class-mc-functionality-snippet-meta.php';
+		require_once __DIR__ . '/class-rf-site-functionality-snippet-meta.php';
 		if ( ! is_file( $path ) ) {
 			return;
 		}
-		$meta = Mc_Functionality_Snippet_Meta::parse( (string) file_get_contents( $path ) );
+		$meta = Rf_Site_Functionality_Snippet_Meta::parse( (string) file_get_contents( $path ) );
 		$context = self::current_context();
-		if ( ! Mc_Functionality_Snippet_Meta::matches( $meta, $context ) ) {
+		if ( ! Rf_Site_Functionality_Snippet_Meta::matches( $meta, $context ) ) {
 			return;
 		}
 		if ( ! self::context_allows( $meta, $context ) ) {
@@ -353,7 +353,7 @@ class Mc_Functionality_Snippet_Loader {
 		if ( '' === $path || ! is_file( $path ) || '' === self::$store_dir ) {
 			return;
 		}
-		$store = new Mc_Functionality_Snippet_Store( self::$store_dir );
+		$store = new Rf_Site_Functionality_Snippet_Store( self::$store_dir );
 		if ( ! $store->is_inside( $path ) ) {
 			return;
 		}
@@ -401,7 +401,7 @@ class Mc_Functionality_Snippet_Loader {
 	}
 
 	/**
-	 * @return Mc_Functionality_Snippet_Store
+	 * @return Rf_Site_Functionality_Snippet_Store
 	 */
 	public function store() {
 		return $this->store;

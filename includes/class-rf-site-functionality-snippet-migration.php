@@ -2,8 +2,8 @@
 /**
  * Copy snippets into the storage directory once.
  *
- * @package    Mc_Functionality
- * @subpackage Mc_Functionality/includes
+ * @package    Rf_Site_Functionality
+ * @subpackage Rf_Site_Functionality/includes
  */
 
 /**
@@ -11,7 +11,7 @@
  *
  * @since 1.1.0
  */
-class Mc_Functionality_Snippet_Migration {
+class Rf_Site_Functionality_Snippet_Migration {
 
 	/**
 	 * Copy files that are not already in the destination.
@@ -40,7 +40,7 @@ class Mc_Functionality_Snippet_Migration {
 			if ( 'index.php' === $name || 'safe-mode.key' === $name || '.htaccess' === $name ) {
 				continue;
 			}
-			$target = rtrim( $dest, '/\\' ) . '/' . Mc_Functionality_Snippet_Store::storage_basename( $name );
+			$target = rtrim( $dest, '/\\' ) . '/' . Rf_Site_Functionality_Snippet_Store::storage_basename( $name );
 			if ( is_file( $target ) ) {
 				continue;
 			}
@@ -78,7 +78,7 @@ class Mc_Functionality_Snippet_Migration {
 			if ( 'index.php' === $name || 'safe-mode.key' === $name || '.htaccess' === $name ) {
 				continue;
 			}
-			$target = rtrim( $dest, '/\\' ) . '/' . Mc_Functionality_Snippet_Store::storage_basename( $name );
+			$target = rtrim( $dest, '/\\' ) . '/' . Rf_Site_Functionality_Snippet_Store::storage_basename( $name );
 			if ( ! is_file( $target ) ) {
 				continue;
 			}
@@ -131,7 +131,7 @@ class Mc_Functionality_Snippet_Migration {
 			if ( in_array( $name, array( 'safe-mode.key', '.htaccess', 'index.php', 'README.md' ), true ) ) {
 				continue;
 			}
-			$target = $private . '/' . Mc_Functionality_Snippet_Store::storage_basename( $name );
+			$target = $private . '/' . Rf_Site_Functionality_Snippet_Store::storage_basename( $name );
 			if ( is_file( $target ) && filesize( $target ) === filesize( $path ) ) {
 				$copied[] = $name;
 				continue;
@@ -166,5 +166,79 @@ class Mc_Functionality_Snippet_Migration {
 			rmdir( $public );
 		}
 		return ! is_dir( $public );
+	}
+
+	/**
+	 * Move a previous snippet directory onto $dest and remove $source.
+	 *
+	 * Copies every file, including the safe-mode key, checks the size, then
+	 * deletes the source. A size mismatch leaves both copies in place.
+	 *
+	 * @since 1.2.2
+	 * @param string $source Previous directory.
+	 * @param string $dest   Directory to keep.
+	 * @return bool Whether $source is gone or was already absent.
+	 */
+	public static function adopt_store( $source, $dest ) {
+		$source = rtrim( (string) $source, '/\\' );
+		$dest   = rtrim( (string) $dest, '/\\' );
+		if ( '' === $source || ! is_dir( $source ) ) {
+			return true;
+		}
+		$source_real = realpath( $source );
+		if ( is_dir( $dest ) ) {
+			$dest_real = realpath( $dest );
+			if ( false !== $source_real && false !== $dest_real && $source_real === $dest_real ) {
+				return true;
+			}
+		} else {
+			$parent = dirname( $dest );
+			if ( is_dir( $parent ) && is_writable( $parent ) && rename( $source, $dest ) ) {
+				return ! is_dir( $source );
+			}
+			if ( ! mkdir( $dest, 0755, true ) ) {
+				return false;
+			}
+		}
+		$names = scandir( $source );
+		if ( ! is_array( $names ) ) {
+			return false;
+		}
+		foreach ( $names as $name ) {
+			if ( '.' === $name || '..' === $name ) {
+				continue;
+			}
+			$path = $source . '/' . $name;
+			if ( ! is_file( $path ) ) {
+				return false;
+			}
+			$target = $dest . '/' . $name;
+			if ( is_file( $target ) && filesize( $target ) === filesize( $path ) ) {
+				continue;
+			}
+			if ( is_file( $target ) ) {
+				return false;
+			}
+			if ( ! copy( $path, $target ) || ! is_file( $target ) || filesize( $target ) !== filesize( $path ) ) {
+				if ( is_file( $target ) ) {
+					unlink( $target );
+				}
+				return false;
+			}
+		}
+		foreach ( $names as $name ) {
+			if ( '.' === $name || '..' === $name ) {
+				continue;
+			}
+			$path = $source . '/' . $name;
+			if ( is_file( $path ) && ! unlink( $path ) ) {
+				return false;
+			}
+		}
+		$left = scandir( $source );
+		if ( is_array( $left ) && 2 === count( $left ) ) {
+			rmdir( $source );
+		}
+		return ! is_dir( $source );
 	}
 }

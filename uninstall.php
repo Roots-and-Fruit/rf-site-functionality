@@ -22,7 +22,7 @@
  * @link       https://www.mattcromwell.com
  * @since      1.0.0
  *
- * @package    Mc_Functionality
+ * @package    Rf_Site_Functionality
  */
 
 // If uninstall not called from WordPress, then exit.
@@ -37,7 +37,7 @@ if ( ! defined( 'WP_UNINSTALL_PLUGIN' ) ) {
  * @param string $mu_file     mu-plugin bootstrap.
  * @return bool
  */
-function mc_functionality_uninstall_keep_files( $storage_dir, $mu_file ) {
+function rf_site_functionality_uninstall_keep_files( $storage_dir, $mu_file ) {
 	unset( $mu_file );
 	return is_dir( $storage_dir );
 }

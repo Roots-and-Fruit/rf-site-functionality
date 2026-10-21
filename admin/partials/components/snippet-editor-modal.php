@@ -2,8 +2,8 @@
 /**
  * Snippet Editor Modal Component
  *
- * @package    Mc_Functionality
- * @subpackage Mc_Functionality/admin/partials/components
+ * @package    Rf_Site_Functionality
+ * @subpackage Rf_Site_Functionality/admin/partials/components
  */
 
 // If this file is called directly, abort.

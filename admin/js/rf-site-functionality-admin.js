@@ -54,7 +54,7 @@
 				console.log('🔍 DEBUG: Creating CodeMirror instance...');
 				
 				// Get the selected theme from localized data
-				var selectedTheme = mc_functionality_ajax.theme || 'default';
+				var selectedTheme = rf_site_functionality_ajax.theme || 'default';
 				console.log('🔍 DEBUG: Using theme:', selectedTheme);
 				
 				codeEditor = wp.codeEditor.initialize(textarea, {
@@ -214,13 +214,13 @@
 			console.log('🔍 DEBUG: Creating new snippet:', name, description);
 			
 			$.ajax({
-				url: mc_functionality_ajax.ajax_url,
+				url: rf_site_functionality_ajax.ajax_url,
 				type: 'POST',
 				data: {
-					action: 'mc_functionality_create_snippet',
+					action: 'rf_site_functionality_create_snippet',
 					name: name,
 					description: description,
-					nonce: mc_functionality_ajax.nonce
+					nonce: rf_site_functionality_ajax.nonce
 				},
 				success: function(response) {
 					console.log('🔍 DEBUG: Create snippet response:', response);
@@ -290,12 +290,12 @@
 			console.log('🔍 DEBUG: Loading snippet content for:', filename);
 			
 			$.ajax({
-				url: mc_functionality_ajax.ajax_url,
+				url: rf_site_functionality_ajax.ajax_url,
 				type: 'POST',
 				data: {
-					action: 'mc_functionality_get_snippet',
+					action: 'rf_site_functionality_get_snippet',
 					filename: filename,
-					nonce: mc_functionality_ajax.nonce
+					nonce: rf_site_functionality_ajax.nonce
 				},
 				success: function(response) {
 					console.log('🔍 DEBUG: AJAX response received:', response);
@@ -393,15 +393,15 @@
 			var priority = $('#mc-execution-priority').val();
 			
 			$.ajax({
-				url: mc_functionality_ajax.ajax_url,
+				url: rf_site_functionality_ajax.ajax_url,
 				type: 'POST',
 				data: {
-					action: 'mc_functionality_save_snippet',
+					action: 'rf_site_functionality_save_snippet',
 					filename: filename,
 					content: content,
 					run_context: runContext,
 					priority: priority,
-					nonce: mc_functionality_ajax.nonce
+					nonce: rf_site_functionality_ajax.nonce
 				},
 				success: function(response) {
 					if (response.success) {
@@ -460,59 +460,116 @@
 			currentFilename = null;
 		}
 
-		// Toggle snippet enable/disable
-		$(document).on('click', '.mc-toggle-snippet', function(e) {
-			e.preventDefault();
-			
-			var button = $(this);
-			var filename = button.data('filename');
-			var currentStatus = button.data('current-status');
-			
-			console.log('🔍 DEBUG: Toggling snippet:', filename, 'Current status:', currentStatus);
-			
-			// Disable button and show loading
-			button.prop('disabled', true).text('Updating...');
-			
+		// Toggle snippet enable/disable. The switch paints immediately; a failed save puts it back.
+		$(document).on('change', '.mc-toggle-snippet', function() {
+			var input = $(this);
+			var state = input.parent().find('.mc-rf-toggle__state');
+			var row = input.closest('tr');
+			var filename = input.data('filename');
+			var enabled = input.prop('checked');
+
+			function paint(isEnabled) {
+				input.prop('checked', isEnabled);
+				row.toggleClass('is-disabled', !isEnabled);
+				if (state.length) {
+					state.text(isEnabled ? state.data('enabled') : state.data('disabled'));
+				}
+			}
+
+			paint(enabled);
+			input.prop('disabled', true);
+
 			$.ajax({
-				url: mc_functionality_ajax.ajax_url,
+				url: rf_site_functionality_ajax.ajax_url,
 				type: 'POST',
 				data: {
-					action: 'mc_functionality_toggle_snippet',
+					action: 'rf_site_functionality_toggle_snippet',
 					filename: filename,
-					nonce: mc_functionality_ajax.nonce
+					nonce: rf_site_functionality_ajax.nonce
 				},
 				success: function(response) {
-					console.log('🔍 DEBUG: Toggle response:', response);
-					
+					input.prop('disabled', false);
 					if (response.success) {
-						// Update button text and data
-						var newStatus = response.data.status;
-						button.data('current-status', newStatus);
-						
-						if (newStatus === 'enabled') {
-							button.text('Disable');
-							button.closest('tr').find('.snippet-status').removeClass('disabled').addClass('enabled').text('Enabled');
-							button.closest('tr').find('.dashicons').removeClass('dashicons-no-alt').addClass('dashicons-yes-alt').css('color', '#46b450');
-						} else {
-							button.text('Enable');
-							button.closest('tr').find('.snippet-status').removeClass('enabled').addClass('disabled').text('Disabled');
-							button.closest('tr').find('.dashicons').removeClass('dashicons-yes-alt').addClass('dashicons-no-alt').css('color', '#dc3232');
-						}
-						
-						// Re-enable button
-						button.prop('disabled', false);
-						
-						// Show success message
-						showWordPressNotice(response.data.message || 'Snippet ' + newStatus + ' successfully!', 'success');
-					} else {
-						showWordPressNotice(response.data || 'Error toggling snippet.', 'error');
-						button.prop('disabled', false).text(currentStatus === 'enabled' ? 'Disable' : 'Enable');
+						paint(response.data.status === 'enabled');
+						showWordPressNotice(response.data.message || 'Snippet updated.', 'success');
+						return;
 					}
+					paint(!enabled);
+					showWordPressNotice(response.data || 'Error toggling snippet.', 'error');
 				},
 				error: function() {
+					input.prop('disabled', false);
+					paint(!enabled);
 					showWordPressNotice('Error toggling snippet. Please try again.', 'error');
-					button.prop('disabled', false).text(currentStatus === 'enabled' ? 'Disable' : 'Enable');
 				}
+			});
+		});
+	});
+
+	$(function () {
+		var select = document.getElementById('mc_codemirror_theme');
+		var preview = document.getElementById('mc-theme-preview');
+		if (!select || !preview || !window.wp || !wp.codeEditor) {
+			return;
+		}
+		var editor = wp.codeEditor.initialize(preview, {
+			codemirror: {
+				mode: 'php',
+				readOnly: 'nocursor',
+				lineNumbers: true,
+				lineWrapping: true,
+				theme: select.value || 'default'
+			}
+		});
+		if (!editor || !editor.codemirror) {
+			return;
+		}
+		editor.codemirror.setSize('100%', 132);
+		select.addEventListener('change', function () {
+			editor.codemirror.setOption('theme', select.value || 'default');
+		});
+	});
+
+	$(function () {
+		var form = document.getElementById('mc-safe-mode-form');
+		if (!form) {
+			return;
+		}
+		var input = form.querySelector('.mc-safe-mode-toggle');
+		if (!input) {
+			return;
+		}
+		input.addEventListener('change', function () {
+			var state = form.querySelector('.mc-rf-toggle__state');
+			if (state) {
+				state.textContent = input.checked ? state.getAttribute('data-enabled') : state.getAttribute('data-disabled');
+			}
+			form.submit();
+		});
+	});
+
+	$(function () {
+		var brand = document.querySelector('.mc-rf-footer__brand');
+		var about = document.getElementById('mc-rf-about');
+		if (!brand || !about) {
+			return;
+		}
+		function setAbout(open) {
+			about.hidden = !open;
+			brand.setAttribute('aria-expanded', open ? 'true' : 'false');
+		}
+		brand.addEventListener('click', function () {
+			setAbout(about.hidden);
+		});
+		document.addEventListener('keydown', function (event) {
+			if (event.key === 'Escape' && !about.hidden) {
+				setAbout(false);
+				brand.focus();
+			}
+		});
+		document.querySelectorAll('.mc-rf-footer a[href="#"], .mc-rf-about a[href="#"]').forEach(function (link) {
+			link.addEventListener('click', function (event) {
+				event.preventDefault();
 			});
 		});
 	});

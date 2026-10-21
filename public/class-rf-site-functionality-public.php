@@ -6,8 +6,8 @@
  * @link       https://www.mattcromwell.com
  * @since      1.0.0
  *
- * @package    Mc_Functionality
- * @subpackage Mc_Functionality/public
+ * @package    Rf_Site_Functionality
+ * @subpackage Rf_Site_Functionality/public
  */
 
 /**
@@ -16,11 +16,11 @@
  * Defines the plugin name, version, and two examples hooks for how to
  * enqueue the public-facing stylesheet and JavaScript.
  *
- * @package    Mc_Functionality
- * @subpackage Mc_Functionality/public
+ * @package    Rf_Site_Functionality
+ * @subpackage Rf_Site_Functionality/public
  * @author     Matt Cromwell <info@mattcromwell.com>
  */
-class Mc_Functionality_Public {
+class Rf_Site_Functionality_Public {
 
 	/**
 	 * The ID of this plugin.
@@ -65,15 +65,15 @@ class Mc_Functionality_Public {
 		 * This function is provided for demonstration purposes only.
 		 *
 		 * An instance of this class should be passed to the run() function
-		 * defined in Mc_Functionality_Loader as all of the hooks are defined
+		 * defined in Rf_Site_Functionality_Loader as all of the hooks are defined
 		 * in that particular class.
 		 *
-		 * The Mc_Functionality_Loader will then create the relationship
+		 * The Rf_Site_Functionality_Loader will then create the relationship
 		 * between the defined hooks and the functions defined in this
 		 * class.
 		 */
 
-		wp_enqueue_style( $this->plugin_name, plugin_dir_url( __FILE__ ) . 'css/mc-functionality-public.css', array(), $this->version, 'all' );
+		wp_enqueue_style( $this->plugin_name, plugin_dir_url( __FILE__ ) . 'css/rf-site-functionality-public.css', array(), $this->version, 'all' );
 
 	}
 
@@ -88,15 +88,15 @@ class Mc_Functionality_Public {
 		 * This function is provided for demonstration purposes only.
 		 *
 		 * An instance of this class should be passed to the run() function
-		 * defined in Mc_Functionality_Loader as all of the hooks are defined
+		 * defined in Rf_Site_Functionality_Loader as all of the hooks are defined
 		 * in that particular class.
 		 *
-		 * The Mc_Functionality_Loader will then create the relationship
+		 * The Rf_Site_Functionality_Loader will then create the relationship
 		 * between the defined hooks and the functions defined in this
 		 * class.
 		 */
 
-		wp_enqueue_script( $this->plugin_name, plugin_dir_url( __FILE__ ) . 'js/mc-functionality-public.js', array( 'jquery' ), $this->version, false );
+		wp_enqueue_script( $this->plugin_name, plugin_dir_url( __FILE__ ) . 'js/rf-site-functionality-public.js', array( 'jquery' ), $this->version, false );
 
 	}
 

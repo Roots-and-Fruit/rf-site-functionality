@@ -2,8 +2,8 @@
 /**
  * Zip import and export for the snippet directory.
  *
- * @package    Mc_Functionality
- * @subpackage Mc_Functionality/includes
+ * @package    Rf_Site_Functionality
+ * @subpackage Rf_Site_Functionality/includes
  */
 
 /**
@@ -11,7 +11,7 @@
  *
  * @since 1.1.0
  */
-class Mc_Functionality_Snippet_Zip {
+class Rf_Site_Functionality_Snippet_Zip {
 
 	const MAX_BYTES = 2097152;
 
@@ -87,7 +87,7 @@ class Mc_Functionality_Snippet_Zip {
 		}
 		for ( $i = 0; $i < $zip->numFiles; $i++ ) { // phpcs:ignore WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase
 			$stat = $zip->statIndex( $i );
-			$name   = Mc_Functionality_Snippet_Store::storage_basename( basename( (string) $stat['name'] ) );
+			$name   = Rf_Site_Functionality_Snippet_Store::storage_basename( basename( (string) $stat['name'] ) );
 			$target = rtrim( $dir, '/\\' ) . '/' . $name;
 			if ( is_file( $target ) && ! $confirm ) {
 				continue;

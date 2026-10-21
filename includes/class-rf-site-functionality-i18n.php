@@ -9,8 +9,8 @@
  * @link       https://www.mattcromwell.com
  * @since      1.0.0
  *
- * @package    Mc_Functionality
- * @subpackage Mc_Functionality/includes
+ * @package    Rf_Site_Functionality
+ * @subpackage Rf_Site_Functionality/includes
  */
 
 /**
@@ -20,11 +20,11 @@
  * so that it is ready for translation.
  *
  * @since      1.0.0
- * @package    Mc_Functionality
- * @subpackage Mc_Functionality/includes
+ * @package    Rf_Site_Functionality
+ * @subpackage Rf_Site_Functionality/includes
  * @author     Matt Cromwell <info@mattcromwell.com>
  */
-class Mc_Functionality_i18n {
+class Rf_Site_Functionality_i18n {
 
 
 	/**
@@ -35,7 +35,7 @@ class Mc_Functionality_i18n {
 	public function load_plugin_textdomain() {
 
 		load_plugin_textdomain(
-			'mc-functionality',
+			'rf-site-functionality',
 			false,
 			dirname( dirname( plugin_basename( __FILE__ ) ) ) . '/languages/'
 		);

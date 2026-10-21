@@ -2,8 +2,8 @@
 /**
  * Optional mu-plugin bootstrap.
  *
- * @package    Mc_Functionality
- * @subpackage Mc_Functionality/includes
+ * @package    Rf_Site_Functionality
+ * @subpackage Rf_Site_Functionality/includes
  */
 
 /**
@@ -11,7 +11,7 @@
  *
  * @since 1.1.0
  */
-class Mc_Functionality_Standalone {
+class Rf_Site_Functionality_Standalone {
 
 	/**
 	 * Runtime class files. The admin class is not one of them.
@@ -20,9 +20,9 @@ class Mc_Functionality_Standalone {
 	 */
 	public static function runtime_files() {
 		return array(
-			'class-mc-functionality-snippet-store.php',
-			'class-mc-functionality-snippet-meta.php',
-			'class-mc-functionality-snippet-loader.php',
+			'class-rf-site-functionality-snippet-store.php',
+			'class-rf-site-functionality-snippet-meta.php',
+			'class-rf-site-functionality-snippet-loader.php',
 		);
 	}
 
@@ -33,7 +33,7 @@ class Mc_Functionality_Standalone {
 	 * @return bool
 	 */
 	public static function install( $mu_dir, $plugin_dir, $storage_dir ) {
-		$copy_dir = rtrim( $mu_dir, '/\\' ) . '/mc-functionality';
+		$copy_dir = rtrim( $mu_dir, '/\\' ) . '/rf-site-functionality';
 		if ( ! is_dir( $copy_dir ) && ! mkdir( $copy_dir, 0755, true ) ) {
 			return false;
 		}
@@ -48,12 +48,12 @@ class Mc_Functionality_Standalone {
 		}
 		$bootstrap  = "<?php\n";
 		$bootstrap .= "if ( ! defined( 'ABSPATH' ) ) {\n\texit;\n}\n";
-		$bootstrap .= 'if ( ! defined( \'MC_FUNCTIONALITY_SNIPPETS_DIR\' ) ) {' . "\n";
-		$bootstrap .= "\tdefine( 'MC_FUNCTIONALITY_SNIPPETS_DIR', " . var_export( $storage_dir, true ) . " );\n";
+		$bootstrap .= 'if ( ! defined( \'RF_SITE_FUNCTIONALITY_SNIPPETS_DIR\' ) ) {' . "\n";
+		$bootstrap .= "\tdefine( 'RF_SITE_FUNCTIONALITY_SNIPPETS_DIR', " . var_export( $storage_dir, true ) . " );\n";
 		$bootstrap .= "}\n";
-		$bootstrap .= "require_once __DIR__ . '/mc-functionality/class-mc-functionality-snippet-loader.php';\n";
-		$bootstrap .= "( new Mc_Functionality_Snippet_Loader() )->load_snippets();\n";
-		return false !== file_put_contents( rtrim( $mu_dir, '/\\' ) . '/mc-functionality-loader.php', $bootstrap );
+		$bootstrap .= "require_once __DIR__ . '/rf-site-functionality/class-rf-site-functionality-snippet-loader.php';\n";
+		$bootstrap .= "( new Rf_Site_Functionality_Snippet_Loader() )->load_snippets();\n";
+		return false !== file_put_contents( rtrim( $mu_dir, '/\\' ) . '/rf-site-functionality-loader.php', $bootstrap );
 	}
 
 	/**

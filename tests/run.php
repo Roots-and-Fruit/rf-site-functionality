@@ -4,7 +4,7 @@
  *
  * Usage: php tests/run.php 1
  *
- * @package Mc_Functionality
+ * @package Rf_Site_Functionality
  */
 
 $phase      = isset( $argv[1] ) ? (string) $argv[1] : '';
@@ -12,12 +12,12 @@ $root       = dirname( __DIR__ );
 $failed     = 0;
 $plugin_dir = $root;
 
-require_once $plugin_dir . '/includes/class-mc-functionality-snippet-store.php';
-require_once $plugin_dir . '/includes/class-mc-functionality-snippet-loader.php';
-require_once $plugin_dir . '/includes/class-mc-functionality-snippet-meta.php';
-require_once $plugin_dir . '/includes/class-mc-functionality-snippet-migration.php';
-require_once $plugin_dir . '/includes/class-mc-functionality-snippet-zip.php';
-require_once $plugin_dir . '/includes/class-mc-functionality-standalone.php';
+require_once $plugin_dir . '/includes/class-rf-site-functionality-snippet-store.php';
+require_once $plugin_dir . '/includes/class-rf-site-functionality-snippet-loader.php';
+require_once $plugin_dir . '/includes/class-rf-site-functionality-snippet-meta.php';
+require_once $plugin_dir . '/includes/class-rf-site-functionality-snippet-migration.php';
+require_once $plugin_dir . '/includes/class-rf-site-functionality-snippet-zip.php';
+require_once $plugin_dir . '/includes/class-rf-site-functionality-standalone.php';
 
 /**
  * @param bool   $condition Condition.
@@ -40,7 +40,7 @@ function mc_assert( $condition, $message ) {
 function mc_run_phase1() {
 	global $failed, $plugin_dir;
 
-$temp = sys_get_temp_dir() . '/mc-functionality-phase1-' . getmypid();
+$temp = sys_get_temp_dir() . '/rf-site-functionality-phase1-' . getmypid();
 if ( is_dir( $temp ) ) {
 	mc_rrmdir( $temp );
 }
@@ -49,10 +49,10 @@ file_put_contents( $temp . '/index.php', "<?php\n// silence\n" );
 file_put_contents( $temp . '/enabled.mcphp', "<?php\nfunction mc_phase1_enabled_marker() { return true; }\n" );
 file_put_contents( $temp . '/skipped.mcphp.disabled', "<?php\nfunction mc_phase1_disabled_marker() { return true; }\n" );
 
-$outside = sys_get_temp_dir() . '/mc-functionality-outside-' . getmypid() . '.php';
+$outside = sys_get_temp_dir() . '/rf-site-functionality-outside-' . getmypid() . '.php';
 file_put_contents( $outside, "<?php\nfunction mc_phase1_outside_marker() { return true; }\n" );
 
-$loader = new Mc_Functionality_Snippet_Loader( $temp );
+$loader = new Rf_Site_Functionality_Snippet_Loader( $temp );
 $loader->load_snippets();
 
 mc_assert( function_exists( 'mc_phase1_enabled_marker' ), 'enabled php file is included' );
@@ -96,7 +96,7 @@ fwrite( STDOUT, "phase 1 ok\n" );
  * @return array{exit: int, dir: string, helper_line: int}
  */
 function mc_phase1_child( $mode, $plugin ) {
-	$dir = sys_get_temp_dir() . '/mc-functionality-phase1-' . $mode . '-' . getmypid();
+	$dir = sys_get_temp_dir() . '/rf-site-functionality-phase1-' . $mode . '-' . getmypid();
 	if ( is_dir( $dir ) ) {
 		mc_rrmdir( $dir );
 	}
@@ -151,7 +151,7 @@ function mc_phase1_child_script( $mode, $plugin, $dir, &$helper_line ) {
 	$body          = 'fatal' === $mode
 		? "function mc_phase1_fatal_helper() {\n\tmc_phase1_missing_function_xyz();\n}\n"
 		: '';
-	return "<?php\nrequire_once {$plugin_export} . '/includes/class-mc-functionality-snippet-store.php';\nrequire_once {$plugin_export} . '/includes/class-mc-functionality-snippet-loader.php';\n{$body}\n\$loader = new Mc_Functionality_Snippet_Loader( {$dir_export} );\n\$loader->load_snippets();\nexit( 0 );\n";
+	return "<?php\nrequire_once {$plugin_export} . '/includes/class-rf-site-functionality-snippet-store.php';\nrequire_once {$plugin_export} . '/includes/class-rf-site-functionality-snippet-loader.php';\n{$body}\n\$loader = new Rf_Site_Functionality_Snippet_Loader( {$dir_export} );\n\$loader->load_snippets();\nexit( 0 );\n";
 }
 
 /**
@@ -214,8 +214,8 @@ function mc_rrmdir( $dir ) {
 function mc_run_phase2() {
 	global $failed, $plugin_dir, $phase;
 
-	$legacy = sys_get_temp_dir() . '/mc-functionality-legacy-' . getmypid();
-	$dest   = sys_get_temp_dir() . '/mc-functionality-dest-' . getmypid();
+	$legacy = sys_get_temp_dir() . '/rf-site-functionality-legacy-' . getmypid();
+	$dest   = sys_get_temp_dir() . '/rf-site-functionality-dest-' . getmypid();
 	mc_rrmdir( $legacy );
 	mc_rrmdir( $dest );
 	mkdir( $legacy, 0755, true );
@@ -227,27 +227,27 @@ function mc_run_phase2() {
 	file_put_contents( $dest . '/a.mcphp', "<?php\nfunction mc_phase2_edited() { return 'edited'; }\n" );
 	file_put_contents( $dest . '/only-dest.mcphp', "<?php\nfunction mc_phase2_dest_only() { return true; }\n" );
 
-	if ( ! defined( 'MC_FUNCTIONALITY_SNIPPETS_DIR' ) ) {
-		define( 'MC_FUNCTIONALITY_SNIPPETS_DIR', $dest );
+	if ( ! defined( 'RF_SITE_FUNCTIONALITY_SNIPPETS_DIR' ) ) {
+		define( 'RF_SITE_FUNCTIONALITY_SNIPPETS_DIR', $dest );
 	}
-	$loader = new Mc_Functionality_Snippet_Loader();
+	$loader = new Rf_Site_Functionality_Snippet_Loader();
 	mc_assert( $loader->store()->get_dir() === $dest, 'default loader uses the storage constant' );
 	$loader->load_snippets();
 	mc_assert( function_exists( 'mc_phase2_dest_only' ), 'storage file is included' );
 	mc_assert( ! function_exists( 'mc_phase2_legacy_only' ), 'legacy folder is not the default load path' );
 
-	Mc_Functionality_Snippet_Migration::copy_once( $legacy, $dest );
+	Rf_Site_Functionality_Snippet_Migration::copy_once( $legacy, $dest );
 	$edited = file_get_contents( $dest . '/a.mcphp' );
 	mc_assert( false !== strpos( $edited, 'mc_phase2_edited' ), 'second copy leaves the destination edit in place' );
 	mc_assert( is_file( $legacy . '/a.mcphp' ), 'source file still exists before verification' );
 	mc_assert( is_file( $dest . '/b.mcphp' ), 'missing destination file is copied' );
 
-	Mc_Functionality_Snippet_Migration::delete_verified_sources( $legacy, $dest );
+	Rf_Site_Functionality_Snippet_Migration::delete_verified_sources( $legacy, $dest );
 	mc_assert( ! is_file( $legacy . '/a.mcphp' ), 'verified source snippet is removed' );
 	mc_assert( is_file( $legacy . '/index.php' ), 'source index.php is kept' );
 	mc_assert( false !== strpos( file_get_contents( $dest . '/a.mcphp' ), 'mc_phase2_edited' ), 'destination edit survives verification' );
 
-	$guarded = Mc_Functionality_Snippet_Meta::ensure_guard( "<?php\necho 'ran-after-guard';\n" );
+	$guarded = Rf_Site_Functionality_Snippet_Meta::ensure_guard( "<?php\necho 'ran-after-guard';\n" );
 	$guard_file = $dest . '/guarded.php';
 	file_put_contents( $guard_file, $guarded );
 	$php  = defined( 'PHP_BINARY' ) ? PHP_BINARY : 'php';
@@ -285,6 +285,28 @@ function mc_run_phase2() {
 	mc_rrmdir( $legacy );
 	mc_rrmdir( $dest );
 
+	$from = sys_get_temp_dir() . '/rf-site-functionality-adopt-from-' . getmypid();
+	$to   = sys_get_temp_dir() . '/rf-site-functionality-adopt-to-' . getmypid();
+	mc_rrmdir( $from );
+	mc_rrmdir( $to );
+	mkdir( $from, 0755, true );
+	file_put_contents( $from . '/safe-mode.key', 'secret' );
+	file_put_contents( $from . '/demo.mcphp', "<?php\necho 'demo';\n" );
+	mc_assert( Rf_Site_Functionality_Snippet_Migration::adopt_store( $from, $to ), 'adopt moves the previous store' );
+	mc_assert( ! is_dir( $from ), 'adopt removes the source directory' );
+	mc_assert( 'secret' === file_get_contents( $to . '/safe-mode.key' ), 'adopt keeps the safe-mode key' );
+	mc_assert( is_file( $to . '/demo.mcphp' ), 'adopt keeps the snippet' );
+
+	$again = sys_get_temp_dir() . '/rf-site-functionality-adopt-conflict-' . getmypid();
+	mc_rrmdir( $again );
+	mkdir( $again, 0755, true );
+	file_put_contents( $again . '/demo.mcphp', "<?php\necho 'other';\n" );
+	mc_assert( ! Rf_Site_Functionality_Snippet_Migration::adopt_store( $again, $to ), 'adopt refuses a different existing file' );
+	mc_assert( is_file( $again . '/demo.mcphp' ), 'refused adopt leaves the source' );
+	mc_assert( false !== strpos( file_get_contents( $to . '/demo.mcphp' ), 'demo' ), 'refused adopt leaves the destination' );
+	mc_rrmdir( $again );
+	mc_rrmdir( $to );
+
 	if ( $failed > 0 ) {
 		fwrite( STDERR, "{$failed} assertion(s) failed\n" );
 		exit( 1 );
@@ -298,27 +320,27 @@ function mc_run_phase2() {
 function mc_run_phase3() {
 	global $failed, $plugin_dir;
 
-	$dir = sys_get_temp_dir() . '/mc-functionality-safe-' . getmypid();
+	$dir = sys_get_temp_dir() . '/rf-site-functionality-safe-' . getmypid();
 	mc_rrmdir( $dir );
 	mkdir( $dir, 0755, true );
 	file_put_contents( $dir . '/live.mcphp', "<?php\nfunction mc_phase3_live() { return true; }\n" );
 
-	$store = new Mc_Functionality_Snippet_Store( $dir );
+	$store = new Rf_Site_Functionality_Snippet_Store( $dir );
 	$key   = $store->ensure_key();
 
 	$store->maybe_disable( 'wrong-secret' );
-	$loader = new Mc_Functionality_Snippet_Loader( $dir );
+	$loader = new Rf_Site_Functionality_Snippet_Loader( $dir );
 	$loader->load_snippets();
 	mc_assert( function_exists( 'mc_phase3_live' ), 'wrong secret still loads the snippet' );
 	mc_assert( ! is_file( $dir . '/snippets-disabled' ), 'wrong secret does not write the flag' );
 
 	$store->maybe_disable( $key );
 	mc_assert( is_file( $dir . '/snippets-disabled' ), 'correct secret writes the flag' );
-	$loader2 = new Mc_Functionality_Snippet_Loader( $dir );
+	$loader2 = new Rf_Site_Functionality_Snippet_Loader( $dir );
 	$loader2->load_snippets();
 	mc_assert( ! function_exists( 'mc_phase3_blocked' ), 'flagged loader does not define a new snippet function' );
 	file_put_contents( $dir . '/blocked.mcphp', "<?php\nfunction mc_phase3_blocked() { return true; }\n" );
-	$loader3 = new Mc_Functionality_Snippet_Loader( $dir );
+	$loader3 = new Rf_Site_Functionality_Snippet_Loader( $dir );
 	$loader3->load_snippets();
 	mc_assert( ! function_exists( 'mc_phase3_blocked' ), 'flag present skips snippets' );
 
@@ -326,6 +348,11 @@ function mc_run_phase3() {
 	mc_assert( is_file( $dir . '/snippets-disabled' ), 'failed clear leaves the flag' );
 	mc_assert( true === $store->clear_flag( array( 'manage_options' => true ) ), 'manage_options can clear the flag' );
 	mc_assert( ! is_file( $dir . '/snippets-disabled' ), 'flag file is gone after a permitted clear' );
+	mc_assert( false === $store->set_disabled( array(), true ), 'user without manage_options cannot turn safe mode on' );
+	mc_assert( true === $store->set_disabled( array( 'manage_options' => true ), true ), 'manage_options can turn safe mode on' );
+	mc_assert( is_file( $dir . '/snippets-disabled' ), 'set_disabled writes the flag' );
+	mc_assert( true === $store->set_disabled( array( 'manage_options' => true ), false ), 'manage_options can turn safe mode off' );
+	mc_assert( ! is_file( $dir . '/snippets-disabled' ), 'set_disabled removes the flag' );
 
 	$php_bin = defined( 'PHP_BINARY' ) ? PHP_BINARY : 'php';
 	$spec    = array(
@@ -362,7 +389,7 @@ function mc_run_phase3() {
 function mc_run_phase4() {
 	global $failed, $plugin_dir;
 
-	$dir = sys_get_temp_dir() . '/mc-functionality-headers-' . getmypid();
+	$dir = sys_get_temp_dir() . '/rf-site-functionality-headers-' . getmypid();
 	mc_rrmdir( $dir );
 	mkdir( $dir, 0755, true );
 	file_put_contents( $dir . '/plain.mcphp', "<?php\nfunction mc_phase4_plain() { return true; }\n" );
@@ -371,7 +398,7 @@ function mc_run_phase4() {
 	file_put_contents( $dir . '/adminish.mcphp', "<?php\n/**\n * Run-Context: frontend-only\n */\nfunction mc_phase4_front() { return true; }\n" );
 	file_put_contents( $dir . '/url.mcphp', "<?php\n/**\n * URL-Contains: /hello\n */\nfunction mc_phase4_url() { return true; }\n" );
 
-	$loader = new Mc_Functionality_Snippet_Loader( $dir );
+	$loader = new Rf_Site_Functionality_Snippet_Loader( $dir );
 	$loader->load_snippets( array( 'is_admin' => false ) );
 	mc_assert( function_exists( 'mc_phase4_plain' ), 'headerless php loads immediately' );
 	mc_assert( function_exists( 'mc_phase4_front' ), 'frontend-only loads on the front' );
@@ -387,12 +414,12 @@ function mc_run_phase4() {
 	$admin_dir = $dir . '-admin';
 	mkdir( $admin_dir, 0755, true );
 	file_put_contents( $admin_dir . '/front.mcphp', "<?php\n/**\n * Run-Context: frontend-only\n */\nfunction mc_phase4_not_in_admin() { return true; }\n" );
-	$admin_loader = new Mc_Functionality_Snippet_Loader( $admin_dir );
+	$admin_loader = new Rf_Site_Functionality_Snippet_Loader( $admin_dir );
 	$admin_loader->load_snippets( array( 'is_admin' => true ) );
 	mc_assert( ! function_exists( 'mc_phase4_not_in_admin' ), 'frontend-only stays out of admin' );
 
 	$round = "<?php\n/**\n * Description stays here\n * Run-Context: everywhere\n * Priority: 10\n */\n";
-	$updated = Mc_Functionality_Snippet_Meta::update( $round, 'admin-only', 5 );
+	$updated = Rf_Site_Functionality_Snippet_Meta::update( $round, 'admin-only', 5 );
 	mc_assert( false !== strpos( $updated, 'Description stays here' ), 'description line survives a header update' );
 	mc_assert( false !== strpos( $updated, 'Run-Context: admin-only' ), 'run context is updated' );
 	mc_assert( false !== strpos( $updated, 'Priority: 5' ), 'priority is updated' );
@@ -433,7 +460,7 @@ function mc_run_phase4() {
 function mc_run_phase5() {
 	global $failed, $plugin_dir;
 
-	$dir = sys_get_temp_dir() . '/mc-functionality-assets-' . getmypid();
+	$dir = sys_get_temp_dir() . '/rf-site-functionality-assets-' . getmypid();
 	mc_rrmdir( $dir );
 	mkdir( $dir, 0755, true );
 	file_put_contents( $dir . '/look.css', "<?php echo \"ran\";\n" );
@@ -441,7 +468,7 @@ function mc_run_phase5() {
 	file_put_contents( $dir . '/block.mcphp', "<?php\n/**\n * Type: content\n * Hook: shortcode\n */\necho 'from-content';\n" );
 	file_put_contents( $dir . '/real.mcphp', "<?php\nfunction mc_phase5_php() { return true; }\n" );
 
-	$loader = new Mc_Functionality_Snippet_Loader( $dir );
+	$loader = new Rf_Site_Functionality_Snippet_Loader( $dir );
 	ob_start();
 	$loader->load_snippets( array( 'is_admin' => false ) );
 	$noise = ob_get_clean();
@@ -499,7 +526,7 @@ function mc_rerun_phases( $phases, $plugin_dir ) {
 function mc_run_phase6() {
 	global $failed, $plugin_dir;
 
-	$dir = sys_get_temp_dir() . '/mc-functionality-zip-' . getmypid();
+	$dir = sys_get_temp_dir() . '/rf-site-functionality-zip-' . getmypid();
 	mc_rrmdir( $dir );
 	mkdir( $dir, 0755, true );
 	$php_body = "<?php\necho 'php-body';\n";
@@ -508,7 +535,7 @@ function mc_run_phase6() {
 	file_put_contents( $dir . '/round.css', $css_body );
 	file_put_contents( $dir . '/safe-mode.key', 'secret-key' );
 	$zip_path = $dir . '/out.zip';
-	mc_assert( true === Mc_Functionality_Snippet_Zip::export( $dir, $zip_path ), 'export writes a zip' );
+	mc_assert( true === Rf_Site_Functionality_Snippet_Zip::export( $dir, $zip_path ), 'export writes a zip' );
 
 	$zip = new ZipArchive();
 	$zip->open( $zip_path );
@@ -517,15 +544,15 @@ function mc_run_phase6() {
 
 	$restore = $dir . '-restore';
 	mkdir( $restore, 0755, true );
-	mc_assert( true === Mc_Functionality_Snippet_Zip::import( $zip_path, $restore, true ), 'import restores files' );
+	mc_assert( true === Rf_Site_Functionality_Snippet_Zip::import( $zip_path, $restore, true ), 'import restores files' );
 	mc_assert( file_get_contents( $restore . '/round.mcphp' ) === $php_body, 'php file round-trips' );
 	mc_assert( file_get_contents( $restore . '/round.css' ) === $css_body, 'css file round-trips' );
 
 	file_put_contents( $restore . '/round.mcphp', "<?php\necho 'edited';\n" );
-	mc_assert( true === Mc_Functionality_Snippet_Zip::import( $zip_path, $restore, false ), 'import without confirm returns' );
+	mc_assert( true === Rf_Site_Functionality_Snippet_Zip::import( $zip_path, $restore, false ), 'import without confirm returns' );
 	mc_assert( false !== strpos( file_get_contents( $restore . '/round.mcphp' ), 'edited' ), 'import without confirm leaves the existing file' );
 
-	$sentinel_dir = sys_get_temp_dir() . '/mc-functionality-sentinel-' . getmypid();
+	$sentinel_dir = sys_get_temp_dir() . '/rf-site-functionality-sentinel-' . getmypid();
 	mkdir( $sentinel_dir, 0755, true );
 	$sentinel = $sentinel_dir . '/wp-config.php';
 	file_put_contents( $sentinel, 'original-config' );
@@ -534,7 +561,7 @@ function mc_run_phase6() {
 	$slip_zip->open( $slip, ZipArchive::CREATE | ZipArchive::OVERWRITE );
 	$slip_zip->addFromString( '../wp-config.php', 'pwned' );
 	$slip_zip->close();
-	mc_assert( 'path' === Mc_Functionality_Snippet_Zip::import( $slip, $dir, true ), 'zip slip is rejected' );
+	mc_assert( 'path' === Rf_Site_Functionality_Snippet_Zip::import( $slip, $dir, true ), 'zip slip is rejected' );
 	mc_assert( 'original-config' === file_get_contents( $sentinel ), 'wp-config.php is unchanged' );
 
 	mc_rrmdir( $dir );
@@ -554,21 +581,21 @@ function mc_run_phase6() {
 function mc_run_phase7() {
 	global $failed, $plugin_dir;
 
-	$storage = sys_get_temp_dir() . '/mc-functionality-mu-storage-' . getmypid();
-	$mu      = sys_get_temp_dir() . '/mc-functionality-mu-' . getmypid();
+	$storage = sys_get_temp_dir() . '/rf-site-functionality-mu-storage-' . getmypid();
+	$mu      = sys_get_temp_dir() . '/rf-site-functionality-mu-' . getmypid();
 	mc_rrmdir( $storage );
 	mc_rrmdir( $mu );
 	mkdir( $storage, 0755, true );
 	mkdir( $mu, 0755, true );
 	file_put_contents( $storage . '/mu-snippet.mcphp', "<?php\nfunction mc_phase7_mu() { return true; }\n" );
 
-	$mu_file = $mu . '/mc-functionality-loader.php';
-	mc_assert( '' === Mc_Functionality_Standalone::notice( $mu_file ), 'notice is empty when the mu file is absent' );
+	$mu_file = $mu . '/rf-site-functionality-loader.php';
+	mc_assert( '' === Rf_Site_Functionality_Standalone::notice( $mu_file ), 'notice is empty when the mu file is absent' );
 	mc_assert( ! is_file( $mu_file ), 'standalone off leaves the mu file absent' );
-	mc_assert( true === Mc_Functionality_Standalone::install( $mu, $plugin_dir, $storage ), 'standalone install writes the bootstrap' );
-	mc_assert( '' !== Mc_Functionality_Standalone::notice( $mu_file ), 'notice is set when the mu file exists' );
+	mc_assert( true === Rf_Site_Functionality_Standalone::install( $mu, $plugin_dir, $storage ), 'standalone install writes the bootstrap' );
+	mc_assert( '' !== Rf_Site_Functionality_Standalone::notice( $mu_file ), 'notice is set when the mu file exists' );
 	$bootstrap = file_get_contents( $mu_file );
-	mc_assert( false === strpos( $bootstrap, 'class-mc-functionality-admin.php' ), 'mu-plugin does not reference the admin class' );
+	mc_assert( false === strpos( $bootstrap, 'class-rf-site-functionality-admin.php' ), 'mu-plugin does not reference the admin class' );
 
 	$child = $mu . '/child.php';
 	file_put_contents(
@@ -597,7 +624,7 @@ function mc_run_phase7() {
 	$child_un  = $mu . '/uninstall-child.php';
 	file_put_contents(
 		$child_un,
-		"<?php\ndefine( 'WP_UNINSTALL_PLUGIN', 'mc-functionality/mc-functionality.php' );\nrequire " . var_export( $uninstall, true ) . ";\necho mc_functionality_uninstall_keep_files( " . var_export( $storage, true ) . ", " . var_export( $mu_file, true ) . " ) ? 'kept' : 'lost';\necho is_dir( " . var_export( $storage, true ) . " ) ? 'dir' : 'nodir';\n"
+		"<?php\ndefine( 'WP_UNINSTALL_PLUGIN', 'rf-site-functionality/rf-site-functionality.php' );\nrequire " . var_export( $uninstall, true ) . ";\necho rf_site_functionality_uninstall_keep_files( " . var_export( $storage, true ) . ", " . var_export( $mu_file, true ) . " ) ? 'kept' : 'lost';\necho is_dir( " . var_export( $storage, true ) . " ) ? 'dir' : 'nodir';\n"
 	);
 	$proc2 = proc_open( escapeshellarg( $php ) . ' ' . escapeshellarg( $child_un ), $spec, $pipes2 );
 	$out2  = '';
@@ -671,15 +698,15 @@ function mc_run_phase8() {
 		}
 	}
 
-	$dir = sys_get_temp_dir() . '/mc-functionality-phase8-' . getmypid();
+	$dir = sys_get_temp_dir() . '/rf-site-functionality-phase8-' . getmypid();
 	mc_rrmdir( $dir );
 	mkdir( $dir, 0755, true );
 	$other = "<?php\necho 'keep';\n";
 	file_put_contents( $dir . '/other.mcphp', $other );
-	$sentinel = sys_get_temp_dir() . '/mc-functionality-phase8-sentinel-' . getmypid() . '.php';
+	$sentinel = sys_get_temp_dir() . '/rf-site-functionality-phase8-sentinel-' . getmypid() . '.php';
 	file_put_contents( $sentinel, 'original-config' );
 
-	$store  = new Mc_Functionality_Snippet_Store( $dir );
+	$store  = new Rf_Site_Functionality_Snippet_Store( $dir );
 	$source = "<?php\n/**\n * Round\n * Run-Context: admin-only\n */\necho 'one';\n";
 	$bad    = $store->create( '../wp-config.php', $source );
 	mc_assert( is_wp_error( $bad ), 'traversal filename is refused' );
@@ -696,7 +723,7 @@ function mc_run_phase8() {
 	mc_assert( is_wp_error( $eval ), 'eval source is refused' );
 	mc_assert( ! is_file( $dir . '/evil.mcphp' ) && ! is_file( $dir . '/evil.mcphp.disabled' ), 'refused eval writes nothing' );
 
-	$huge = $store->create( 'huge.mcphp', str_repeat( 'a', Mc_Functionality_Snippet_Store::MAX_SOURCE_BYTES + 1 ) );
+	$huge = $store->create( 'huge.mcphp', str_repeat( 'a', Rf_Site_Functionality_Snippet_Store::MAX_SOURCE_BYTES + 1 ) );
 	mc_assert( is_wp_error( $huge ), 'oversized source is refused' );
 	mc_assert( ! is_file( $dir . '/huge.mcphp.disabled' ), 'refused oversized write leaves no file' );
 

@@ -1,14 +1,14 @@
-# MC Functionality
+# Site Functionality
 
-[![WordPress Plugin Version](https://img.shields.io/badge/WordPress%20Plugin-1.2.2-blue.svg)](https://github.com/Roots-and-Fruit/mc-functionality)
+[![WordPress Plugin Version](https://img.shields.io/badge/WordPress%20Plugin-2.0.0-blue.svg)](https://github.com/Roots-and-Fruit/rf-site-functionality)
 [![PHP Version](https://img.shields.io/badge/PHP-7.4+-green.svg)](https://php.net/)
 [![WordPress Version](https://img.shields.io/badge/WordPress-5.0+-green.svg)](https://wordpress.org/)
 [![License](https://img.shields.io/badge/License-GPL%20v2%2B-orange.svg)](https://www.gnu.org/licenses/gpl-2.0.html)
-[![Maintenance](https://img.shields.io/badge/Maintained%3F-yes-green.svg)](https://github.com/Roots-and-Fruit/mc-functionality/graphs/commit-activity)
+[![Maintenance](https://img.shields.io/badge/Maintained%3F-yes-green.svg)](https://github.com/Roots-and-Fruit/rf-site-functionality/graphs/commit-activity)
 
 A **file-based code snippet system** for WordPress that loads and executes PHP files with better performance and security than database-stored snippets.
 
-## 🚀 Why MC Functionality?
+## 🚀 Why Site Functionality?
 
 ### Performance Benefits
 - **File-based storage** - No database queries for snippet loading
@@ -31,16 +31,16 @@ A **file-based code snippet system** for WordPress that loads and executes PHP f
 
 ## 📦 Installation
 
-1. **Upload** the plugin to `/wp-content/plugins/mc-functionality/`
+1. **Upload** the plugin to `/wp-content/plugins/rf-site-functionality/`
 2. **Activate** the plugin through the WordPress admin
-3. **Access** "Site Functions" under the Plugins menu
+3. **Access** "Site Functionality" under the Plugins menu
 4. **Create** your first snippet. It is saved in `wp-content/mc-snippets/`
 
 ## 🛠️ Quick Start
 
 ### Creating Your First Snippet
 
-1. Go to **Plugins → Site Functions** in your WordPress admin
+1. Go to **Plugins → Site Functionality** in your WordPress admin
 2. Click **"Create New Snippet"**
 3. Write your PHP code:
 
@@ -48,7 +48,7 @@ A **file-based code snippet system** for WordPress that loads and executes PHP f
 <?php
 // Add a custom shortcode
 add_shortcode( 'hello_world', function( $atts ) {
-    return '<div>Hello from MC Functionality!</div>';
+    return '<div>Hello from Site Functionality!</div>';
 } );
 
 // Hook into WordPress actions
@@ -61,9 +61,7 @@ add_action( 'wp_footer', function() {
 
 ### File-Based Snippets
 
-Snippet files are stored outside the web root, in a folder named `mc-snippets-` plus a short hash of the site path. On a normal host that folder sits next to the WordPress directory. WordPress Studio does not allow PHP to write there, so on Studio the folder is in the system temp directory. Set `MC_FUNCTIONALITY_SNIPPETS_DIR` if you want a permanent path PHP is allowed to use. On disk the bodies use the `.mcphp` extension, so a direct web request does not run them. The editor and the Abilities API still call a snippet `example.php`.
-
-After you update to 1.2.1, open `https://yoursite.example/wp-content/mc-snippets/safe-mode.key` in a private window. You want a 404. The old key is deleted during the move. A new key is written in the private folder. If that URL still downloads a file, load any WordPress page once and check the folder again.
+Snippet files live in `wp-content/mc-snippets`, or in the directory you set with `RF_SITE_FUNCTIONALITY_SNIPPETS_DIR`. A browser cannot run the PHP. The code is stored as `.mcphp`, which PHP does not execute on a direct request, and the file starts with an `ABSPATH` exit if a server runs it anyway. Apache and IIS are also told to refuse the folder, so those servers do not return the source. The editor and the Abilities API still call a snippet `example.php`.
 
 On WordPress 6.9 or newer, the same files are available through the Abilities API: list, read, create, update, enable, disable, and delete. Administrators receive `read_mc_snippets`, `edit_mc_snippets`, and `delete_mc_snippets` on upgrade. A new file is saved disabled until it is enabled.
 
@@ -123,8 +121,8 @@ This project is licensed under the GPL v2 or later - see the [LICENSE.txt](LICEN
 
 ## 🙏 Support
 
-- **Documentation**: [Plugin Wiki](https://github.com/mattcromwell/mc-functionality/wiki)
-- **Issues**: [GitHub Issues](https://github.com/mattcromwell/mc-functionality/issues)
+- **Documentation**: [Plugin repository](https://github.com/Roots-and-Fruit/rf-site-functionality)
+- **Issues**: [GitHub Issues](https://github.com/Roots-and-Fruit/rf-site-functionality/issues)
 - **Author**: [Matt Cromwell](https://www.mattcromwell.com/)
 
 ## ⭐ Star This Repository
