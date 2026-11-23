@@ -37,7 +37,7 @@ class Rf_Site_Functionality_Snippet_Migration {
 				continue;
 			}
 			$name = basename( $path );
-			if ( in_array( $name, array( 'index.php', 'safe-mode.key', 'safe-mode-key.php', '.htaccess', 'web.config' ), true ) ) {
+			if ( in_array( $name, array( 'index.php', 'safe-mode.key', 'safe-mode-key.php', 'snippets-disabled', 'snippets-disabled.php', 'rf-lockdown-probe.php', '.htaccess', 'web.config' ), true ) ) {
 				continue;
 			}
 			$target = rtrim( $dest, '/\\' ) . '/' . Rf_Site_Functionality_Snippet_Store::storage_basename( $name );
@@ -75,7 +75,7 @@ class Rf_Site_Functionality_Snippet_Migration {
 				continue;
 			}
 			$name = basename( $path );
-			if ( in_array( $name, array( 'index.php', 'safe-mode.key', 'safe-mode-key.php', '.htaccess', 'web.config' ), true ) ) {
+			if ( in_array( $name, array( 'index.php', 'safe-mode.key', 'safe-mode-key.php', 'snippets-disabled', 'snippets-disabled.php', 'rf-lockdown-probe.php', '.htaccess', 'web.config' ), true ) ) {
 				continue;
 			}
 			$target = rtrim( $dest, '/\\' ) . '/' . Rf_Site_Functionality_Snippet_Store::storage_basename( $name );
@@ -128,7 +128,7 @@ class Rf_Site_Functionality_Snippet_Migration {
 			if ( ! is_file( $path ) ) {
 				continue;
 			}
-			if ( in_array( $name, array( 'safe-mode.key', 'safe-mode-key.php', '.htaccess', 'web.config', 'index.php', 'README.md' ), true ) ) {
+			if ( in_array( $name, array( 'safe-mode.key', 'safe-mode-key.php', 'snippets-disabled', 'snippets-disabled.php', 'rf-lockdown-probe.php', '.htaccess', 'web.config', 'index.php', 'README.md' ), true ) ) {
 				continue;
 			}
 			$target = $private . '/' . Rf_Site_Functionality_Snippet_Store::storage_basename( $name );
@@ -155,7 +155,7 @@ class Rf_Site_Functionality_Snippet_Migration {
 			if ( ! is_file( $path ) ) {
 				continue;
 			}
-			$drop = in_array( $name, array( 'safe-mode.key', 'safe-mode-key.php', '.htaccess', 'web.config', 'index.php', 'README.md' ), true );
+			$drop = in_array( $name, array( 'safe-mode.key', 'safe-mode-key.php', 'snippets-disabled', 'snippets-disabled.php', 'rf-lockdown-probe.php', '.htaccess', 'web.config', 'index.php', 'README.md' ), true );
 			if ( ! $drop && ! in_array( $name, $copied, true ) ) {
 				continue;
 			}

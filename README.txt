@@ -4,7 +4,7 @@ Donate link: https://www.mattcromwell.com/
 Tags: snippets, code, php
 Requires at least: 6.0
 Tested up to: 7.1
-Stable tag: 2.1.0
+Stable tag: 2.2.0
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -21,6 +21,24 @@ Site Functionality keeps small pieces of PHP as files beside WordPress. Snippets
 2. Activate Site Functionality from the Plugins screen.
 
 == Changelog ==
+
+= 2.2.0 =
+Released 2026-11-23.
+
+Site Functionality now locks down the `wp-content/rf-snippets/` fallback programmatically on Nginx, Apache, LiteSpeed, and IIS with zero server configuration.
+
+**Changed**
+
+* When falling back to `wp-content/rf-snippets/`, snippets now live inside an unguessable 128-bit random subfolder (`wp-content/rf-snippets/<32-hex>/`) with `index.php`, `.htaccess`, and `web.config` in both the parent folder and subfolder. Files stored directly in `wp-content/rf-snippets/` from 2.1.0 are moved automatically.
+* The loopback web-access check now probes a PHP-guarded canary (`rf-lockdown-probe.php`) instead of a `.txt` file, so Nginx hosts where PHP-FPM exits with an empty response report as protected instead of showing an unactionable Nginx config warning.
+
+**Fixed**
+
+* Fixed Settings storage callouts being hoisted above the plugin tab bar by WordPress admin scripts. Callouts now stay inside the **Snippet Storage** card.
+
+**Security**
+
+* Every file written to the snippet directory now ends in `.php` with an `ABSPATH` or `exit` guard at the top (`example.php`, `example.disabled.php`, `example.error.php`, `safe-mode-key.php`, `snippets-disabled.php`), so Nginx/PHP-FPM returns an empty response instead of serving raw snippet source, error notes, or flags over HTTP. Existing `.mcphp`, `.disabled`, `.error`, and `snippets-disabled` files are migrated automatically.
 
 = 2.1.0 =
 Released 2026-11-23.

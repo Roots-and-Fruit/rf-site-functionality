@@ -57,14 +57,81 @@ function rf_site_functionality_sibling_snippets_dir( $abspath = null ) {
 }
 
 /**
- * Automatic in-web-root fallback directory, locked down against direct HTTP access.
+ * Base folder for the automatic in-web-root fallback (wp-content/rf-snippets).
+ *
+ * @param string|null $wp_content_dir Optional wp-content path.
+ * @return string
+ */
+function rf_site_functionality_wp_content_snippets_base_dir( $wp_content_dir = null ) {
+	$content = null === $wp_content_dir ? WP_CONTENT_DIR : (string) $wp_content_dir;
+	return rtrim( $content, '/\\' ) . DIRECTORY_SEPARATOR . 'rf-snippets';
+}
+
+/**
+ * Find an existing 128-bit hex subfolder inside wp-content/rf-snippets or generate a new one.
+ *
+ * @param string $base_dir Base wp-content/rf-snippets directory.
+ * @return string
+ */
+function rf_site_functionality_wp_content_snippets_subdir( $base_dir ) {
+	$base_dir = rtrim( (string) $base_dir, '/\\' );
+	if ( is_dir( $base_dir ) ) {
+		$entries = scandir( $base_dir );
+		if ( is_array( $entries ) ) {
+			sort( $entries );
+			foreach ( $entries as $entry ) {
+				if ( 1 === preg_match( '/^[a-f0-9]{32}$/', $entry ) && is_dir( $base_dir . DIRECTORY_SEPARATOR . $entry ) ) {
+					return $base_dir . DIRECTORY_SEPARATOR . $entry;
+				}
+			}
+		}
+	}
+	return $base_dir . DIRECTORY_SEPARATOR . bin2hex( random_bytes( 16 ) );
+}
+
+/**
+ * Automatic in-web-root fallback directory, inside a random 128-bit subfolder.
  *
  * @param string|null $wp_content_dir Optional wp-content path.
  * @return string
  */
 function rf_site_functionality_wp_content_snippets_dir( $wp_content_dir = null ) {
-	$content = null === $wp_content_dir ? WP_CONTENT_DIR : (string) $wp_content_dir;
-	return rtrim( $content, '/\\' ) . DIRECTORY_SEPARATOR . 'rf-snippets';
+	$base = rf_site_functionality_wp_content_snippets_base_dir( $wp_content_dir );
+	return rf_site_functionality_wp_content_snippets_subdir( $base );
+}
+
+/**
+ * Move any flat files from wp-content/rf-snippets/ (2.1.0 layout) into the random subfolder.
+ *
+ * Leaves lockdown files (index.php, .htaccess, web.config) in the base directory.
+ *
+ * @param string $base_dir Base wp-content/rf-snippets directory.
+ * @param string $sub_dir  Random 128-bit subfolder.
+ * @return void
+ */
+function rf_site_functionality_migrate_flat_fallback( $base_dir, $sub_dir ) {
+	if ( ! is_dir( $base_dir ) || ! is_dir( $sub_dir ) ) {
+		return;
+	}
+	$entries = scandir( $base_dir );
+	if ( ! is_array( $entries ) ) {
+		return;
+	}
+	$keep = array( '.', '..', 'index.php', '.htaccess', 'web.config' );
+	foreach ( $entries as $entry ) {
+		if ( in_array( $entry, $keep, true ) ) {
+			continue;
+		}
+		$src = $base_dir . DIRECTORY_SEPARATOR . $entry;
+		if ( ! is_file( $src ) ) {
+			continue;
+		}
+		$dst = $sub_dir . DIRECTORY_SEPARATOR . $entry;
+		if ( ! is_file( $dst ) ) {
+			// phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged
+			@rename( $src, $dst );
+		}
+	}
 }
 
 /**
@@ -188,9 +255,9 @@ function rf_site_functionality_resolve_storage( $options = array() ) {
 		);
 	}
 
-	$sibling  = rf_site_functionality_sibling_snippets_dir( $abspath );
-	$fallback = rf_site_functionality_wp_content_snippets_dir( $wp_content_dir );
-	$temp     = rf_site_functionality_temp_snippets_dir( $abspath, $temp_dir );
+	$sibling       = rf_site_functionality_sibling_snippets_dir( $abspath );
+	$fallback_base = rf_site_functionality_wp_content_snippets_base_dir( $wp_content_dir );
+	$temp          = rf_site_functionality_temp_snippets_dir( $abspath, $temp_dir );
 
 	$sibling_check = rf_site_functionality_can_use_dir( $sibling, $basedir );
 	if ( $sibling_check['ok'] ) {
@@ -207,23 +274,31 @@ function rf_site_functionality_resolve_storage( $options = array() ) {
 		);
 	}
 
-	$fallback_check = rf_site_functionality_can_use_dir( $fallback, $basedir );
-	if ( $fallback_check['ok'] ) {
-		if ( is_dir( $temp ) && rf_site_functionality_path_allowed( $temp, $basedir ) ) {
-			require_once __DIR__ . '/class-rf-site-functionality-snippet-migration.php';
-			Rf_Site_Functionality_Snippet_Migration::adopt_store( $temp, $fallback_check['dir'] );
+	$base_check = rf_site_functionality_can_use_dir( $fallback_base, $basedir );
+	if ( $base_check['ok'] ) {
+		require_once __DIR__ . '/class-rf-site-functionality-snippet-store.php';
+		Rf_Site_Functionality_Snippet_Store::write_lockdown_files( $base_check['dir'] );
+		$fallback       = rf_site_functionality_wp_content_snippets_subdir( $base_check['dir'] );
+		$fallback_check = rf_site_functionality_can_use_dir( $fallback, $basedir );
+		if ( $fallback_check['ok'] ) {
+			Rf_Site_Functionality_Snippet_Store::write_lockdown_files( $fallback_check['dir'] );
+			rf_site_functionality_migrate_flat_fallback( $base_check['dir'], $fallback_check['dir'] );
+			if ( is_dir( $temp ) && rf_site_functionality_path_allowed( $temp, $basedir ) ) {
+				require_once __DIR__ . '/class-rf-site-functionality-snippet-migration.php';
+				Rf_Site_Functionality_Snippet_Migration::adopt_store( $temp, $fallback_check['dir'] );
+			}
+			return array(
+				'dir'             => $fallback_check['dir'],
+				'tier'            => 'wp_content',
+				'fallback_reason' => $sibling_check['reason'],
+				'inside_web_root' => true,
+				'writable'        => true,
+			);
 		}
-		return array(
-			'dir'             => $fallback_check['dir'],
-			'tier'            => 'wp_content',
-			'fallback_reason' => $sibling_check['reason'],
-			'inside_web_root' => true,
-			'writable'        => true,
-		);
 	}
 
 	return array(
-		'dir'             => $fallback,
+		'dir'             => $fallback_base,
 		'tier'            => 'unwritable',
 		'fallback_reason' => $sibling_check['reason'],
 		'inside_web_root' => true,

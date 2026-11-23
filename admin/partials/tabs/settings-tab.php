@@ -119,9 +119,9 @@ $mc_safe_off         = _x( 'Off', 'toggle state', 'rf-site-functionality' );
 
 		$mc_probe_labels = array(
 			'outside_root' => __( 'Protected — directory is outside the web root.', 'rf-site-functionality' ),
-			'blocked'      => __( 'Protected — direct HTTP requests are blocked.', 'rf-site-functionality' ),
-			'unverified'   => __( 'Hardened (.htaccess, web.config, index.php, PHP-guarded key) — loopback check unavailable on this host.', 'rf-site-functionality' ),
-			'exposed'      => __( 'Action recommended — direct HTTP requests reached a test file in this folder.', 'rf-site-functionality' ),
+			'blocked'      => __( 'Protected — direct HTTP requests are blocked or return empty.', 'rf-site-functionality' ),
+			'unverified'   => __( 'Hardened (PHP-guarded files, .htaccess, web.config, index.php) — loopback check unavailable on this host.', 'rf-site-functionality' ),
+			'exposed'      => __( 'Action recommended — your web server served raw PHP source from this folder.', 'rf-site-functionality' ),
 			'unwritable'   => __( 'Unavailable — directory is not writable.', 'rf-site-functionality' ),
 		);
 		$mc_probe_label = isset( $mc_probe_labels[ $mc_probe_status ] ) ? $mc_probe_labels[ $mc_probe_status ] : $mc_probe_status;
@@ -157,12 +157,12 @@ $mc_safe_off         = _x( 'Off', 'toggle state', 'rf-site-functionality' );
 		</dl>
 
 		<?php if ( ! $mc_writable ) : ?>
-			<div class="notice notice-error mc-settings__notice">
+			<div class="mc-storage-callout mc-storage-callout--error" role="alert">
 				<p><?php esc_html_e( 'Site Functionality cannot write to its snippet directory. Check filesystem permissions for wp-content or set RF_SITE_FUNCTIONALITY_SNIPPETS_DIR in wp-config.php.', 'rf-site-functionality' ); ?></p>
 			</div>
 		<?php elseif ( 'exposed' === $mc_probe_status ) : ?>
-			<div class="notice notice-warning mc-settings__notice">
-				<p><?php esc_html_e( 'Your web server served a test file from the snippet folder (common on Nginx, which ignores .htaccess). Snippets still cannot execute directly and the safe-mode key is PHP-guarded, but adding this Nginx rule blocks direct downloads of snippet files:', 'rf-site-functionality' ); ?></p>
+			<div class="mc-storage-callout mc-storage-callout--warning" role="status">
+				<p><?php esc_html_e( 'Your web server returned raw PHP source code from the snippet folder instead of executing or blocking it. Add a web server rule to deny direct access to /wp-content/rf-snippets/:', 'rf-site-functionality' ); ?></p>
 				<pre class="mc-storage-nginx"><code>location ^~ /wp-content/rf-snippets/ {
     deny all;
     return 403;

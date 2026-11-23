@@ -38,7 +38,7 @@ class Rf_Site_Functionality_Snippet_Zip {
 				continue;
 			}
 			$name = basename( $path );
-			if ( in_array( $name, array( 'safe-mode.key', 'safe-mode-key.php', 'snippets-disabled', 'index.php', '.htaccess', 'web.config' ), true ) ) {
+			if ( in_array( $name, array( 'safe-mode.key', 'safe-mode-key.php', 'snippets-disabled', 'snippets-disabled.php', 'rf-lockdown-probe.php', 'index.php', '.htaccess', 'web.config' ), true ) ) {
 				continue;
 			}
 			if ( ! self::allowed_name( $name ) ) {
@@ -125,7 +125,7 @@ class Rf_Site_Functionality_Snippet_Zip {
 	 * @return bool
 	 */
 	public static function allowed_name( $name ) {
-		if ( in_array( $name, array( 'safe-mode.key', 'safe-mode-key.php', 'snippets-disabled', 'index.php', '.htaccess', 'web.config' ), true ) ) {
+		if ( in_array( $name, array( 'safe-mode.key', 'safe-mode-key.php', 'snippets-disabled', 'snippets-disabled.php', 'rf-lockdown-probe.php', 'index.php', '.htaccess', 'web.config' ), true ) ) {
 			return false;
 		}
 		return 1 === preg_match( '/^[a-zA-Z0-9\-_\.]+\.(php|mcphp|css|js)(\.disabled|\.error)?$/', $name );

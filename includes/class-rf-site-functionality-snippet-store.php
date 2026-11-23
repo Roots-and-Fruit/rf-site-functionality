@@ -38,6 +38,58 @@ class Rf_Site_Functionality_Snippet_Store {
 	}
 
 	/**
+	 * Internal files inside the snippet directory that are never snippets.
+	 *
+	 * @var string[]
+	 */
+	const INTERNAL_FILES = array(
+		'index.php',
+		'safe-mode-key.php',
+		'snippets-disabled.php',
+		'rf-lockdown-probe.php',
+		'safe-mode.key',
+		'snippets-disabled',
+		'.htaccess',
+		'web.config',
+	);
+
+	/**
+	 * Write web-access lockdown files (index.php, .htaccess, web.config) into a directory.
+	 *
+	 * @param string $dir Target directory.
+	 * @return bool
+	 */
+	public static function write_lockdown_files( $dir ) {
+		$dir = rtrim( (string) $dir, '/\\' );
+		if ( '' === $dir || ! is_dir( $dir ) || ! is_writable( $dir ) ) {
+			return false;
+		}
+		$index = $dir . '/index.php';
+		if ( ! is_file( $index ) ) {
+			file_put_contents( $index, "<?php\n// Silence is golden.\n" );
+		}
+		$htaccess         = $dir . '/.htaccess';
+		$legacy_htaccess  = "<Files \"*\">\nRequire all denied\n</Files>\n";
+		$desired_htaccess = "Options -Indexes\n<IfModule mod_authz_core.c>\n\tRequire all denied\n</IfModule>\n<IfModule !mod_authz_core.c>\n\tOrder allow,deny\n\tDeny from all\n</IfModule>\n";
+		if ( ! is_file( $htaccess ) || $legacy_htaccess === file_get_contents( $htaccess ) ) {
+			file_put_contents( $htaccess, $desired_htaccess );
+		}
+		$web_config = $dir . '/web.config';
+		if ( ! is_file( $web_config ) ) {
+			$iis = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
+				. "<configuration>\n"
+				. "\t<system.webServer>\n"
+				. "\t\t<authorization>\n"
+				. "\t\t\t<deny users=\"*\" />\n"
+				. "\t\t</authorization>\n"
+				. "\t</system.webServer>\n"
+				. "</configuration>\n";
+			file_put_contents( $web_config, $iis );
+		}
+		return true;
+	}
+
+	/**
 	 * Create the directory if it is missing and write web-access lockdown files.
 	 *
 	 * @return bool
@@ -53,29 +105,7 @@ class Rf_Site_Functionality_Snippet_Store {
 		if ( ! is_writable( $this->dir ) ) {
 			return false;
 		}
-		$index = $this->dir . '/index.php';
-		if ( ! is_file( $index ) ) {
-			file_put_contents( $index, "<?php\n// Silence is golden.\n" );
-		}
-		$htaccess         = $this->dir . '/.htaccess';
-		$legacy_htaccess  = "<Files \"*\">\nRequire all denied\n</Files>\n";
-		$desired_htaccess = "Options -Indexes\n<IfModule mod_authz_core.c>\n\tRequire all denied\n</IfModule>\n<IfModule !mod_authz_core.c>\n\tOrder allow,deny\n\tDeny from all\n</IfModule>\n";
-		if ( ! is_file( $htaccess ) || $legacy_htaccess === file_get_contents( $htaccess ) ) {
-			file_put_contents( $htaccess, $desired_htaccess );
-		}
-		$web_config = $this->dir . '/web.config';
-		if ( ! is_file( $web_config ) ) {
-			$iis = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
-				. "<configuration>\n"
-				. "\t<system.webServer>\n"
-				. "\t\t<authorization>\n"
-				. "\t\t\t<deny users=\"*\" />\n"
-				. "\t\t</authorization>\n"
-				. "\t</system.webServer>\n"
-				. "</configuration>\n";
-			file_put_contents( $web_config, $iis );
-		}
-		return true;
+		return self::write_lockdown_files( $this->dir );
 	}
 
 	/**
@@ -97,9 +127,20 @@ class Rf_Site_Functionality_Snippet_Store {
 	}
 
 	/**
+	 * PHP-guarded safe-mode flag path.
+	 *
 	 * @return string
 	 */
 	public function flag_path() {
+		return $this->dir . '/snippets-disabled.php';
+	}
+
+	/**
+	 * Legacy plain-text safe-mode flag path (pre-2.2.0).
+	 *
+	 * @return string
+	 */
+	public function legacy_flag_path() {
 		return $this->dir . '/snippets-disabled';
 	}
 
@@ -161,7 +202,7 @@ class Rf_Site_Functionality_Snippet_Store {
 	 * @return bool
 	 */
 	public function is_disabled() {
-		return is_file( $this->flag_path() );
+		return is_file( $this->flag_path() ) || is_file( $this->legacy_flag_path() );
 	}
 
 	/**
@@ -175,7 +216,7 @@ class Rf_Site_Functionality_Snippet_Store {
 		if ( '' === $key || ! is_string( $secret ) || ! hash_equals( $key, $secret ) ) {
 			return false;
 		}
-		return false !== file_put_contents( $this->flag_path(), '1' );
+		return false !== file_put_contents( $this->flag_path(), "<?php\nexit;\n" );
 	}
 
 	/**
@@ -232,7 +273,7 @@ class Rf_Site_Functionality_Snippet_Store {
 		if ( ! is_dir( $this->dir ) || ! is_writable( $this->dir ) ) {
 			return 'unwritable';
 		}
-		$cache_key = 'rf_sf_probe_' . substr( md5( $this->dir ), 0, 12 );
+		$cache_key = 'rf_sf_probe2_' . substr( md5( $this->dir ), 0, 12 );
 		if ( ! $force && function_exists( 'get_transient' ) ) {
 			$cached = get_transient( $cache_key );
 			if ( is_string( $cached ) && in_array( $cached, array( 'blocked', 'exposed', 'unverified' ), true ) ) {
@@ -243,14 +284,15 @@ class Rf_Site_Functionality_Snippet_Store {
 			return 'unverified';
 		}
 		$token      = 'rf-probe-' . bin2hex( random_bytes( 8 ) );
-		$probe_file = $this->dir . '/rf-lockdown-probe.txt';
-		if ( false === file_put_contents( $probe_file, $token ) ) {
+		$probe_file = $this->dir . '/rf-lockdown-probe.php';
+		$probe_body = "<?php\nexit;\n// " . $token . "\n";
+		if ( false === file_put_contents( $probe_file, $probe_body ) ) {
 			return 'unwritable';
 		}
 		$status = 'unverified';
 		try {
 			$response = wp_remote_get(
-				$base_url . '/rf-lockdown-probe.txt',
+				$base_url . '/rf-lockdown-probe.php',
 				array(
 					'timeout'     => 3,
 					'redirection' => 0,
@@ -260,11 +302,9 @@ class Rf_Site_Functionality_Snippet_Store {
 			if ( ! is_wp_error( $response ) ) {
 				$code = (int) wp_remote_retrieve_response_code( $response );
 				$body = (string) wp_remote_retrieve_body( $response );
-				if ( 200 === $code && false !== strpos( $body, $token ) ) {
+				if ( 200 === $code && ( false !== strpos( $body, $token ) || false !== strpos( $body, '<?php' ) ) ) {
 					$status = 'exposed';
-				} elseif ( $code >= 400 && $code < 500 ) {
-					$status = 'blocked';
-				} elseif ( 200 === $code && false === strpos( $body, $token ) ) {
+				} elseif ( ( $code >= 400 && $code < 500 ) || 200 === $code ) {
 					$status = 'blocked';
 				}
 			}
@@ -296,11 +336,13 @@ class Rf_Site_Functionality_Snippet_Store {
 		if ( ! self::can_clear_flag( $capabilities ) ) {
 			return false;
 		}
-		$path = $this->flag_path();
-		if ( ! is_file( $path ) ) {
-			return true;
+		$ok = true;
+		foreach ( array( $this->flag_path(), $this->legacy_flag_path() ) as $path ) {
+			if ( is_file( $path ) && ! unlink( $path ) ) {
+				$ok = false;
+			}
 		}
-		return unlink( $path );
+		return $ok;
 	}
 
 	/**
@@ -318,11 +360,16 @@ class Rf_Site_Functionality_Snippet_Store {
 			return $this->clear_flag( $capabilities );
 		}
 		$this->ensure_dir();
+		$legacy = $this->legacy_flag_path();
+		if ( is_file( $legacy ) ) {
+			// phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged
+			@unlink( $legacy );
+		}
 		$path = $this->flag_path();
 		if ( is_file( $path ) ) {
 			return true;
 		}
-		return false !== file_put_contents( $path, '1' );
+		return false !== file_put_contents( $path, "<?php\nexit;\n" );
 	}
 
 	/**
@@ -360,14 +407,17 @@ class Rf_Site_Functionality_Snippet_Store {
 		if ( basename( $filename ) !== $filename ) {
 			return false;
 		}
-		if ( 'index.php' === $filename || 'safe-mode-key.php' === $filename ) {
+		if ( in_array( $filename, self::INTERNAL_FILES, true ) ) {
+			return false;
+		}
+		if ( '.disabled.php' === substr( $filename, -13 ) || '.error.php' === substr( $filename, -10 ) ) {
 			return false;
 		}
 		return 1 === preg_match( '/^[a-zA-Z0-9\-_\.]+\.php(\.disabled)?$/', $filename );
 	}
 
 	/**
-	 * Enabled PHP snippets. Skips index.php and files that have a .disabled sibling.
+	 * Enabled PHP snippets. Skips internal files and disabled/error siblings.
 	 *
 	 * @return string[] Absolute paths.
 	 */
@@ -375,7 +425,7 @@ class Rf_Site_Functionality_Snippet_Store {
 		if ( ! is_dir( $this->dir ) ) {
 			return array();
 		}
-		$paths = glob( $this->dir . DIRECTORY_SEPARATOR . '*.mcphp' );
+		$paths = glob( $this->dir . DIRECTORY_SEPARATOR . '*.php' );
 		if ( ! is_array( $paths ) ) {
 			return array();
 		}
@@ -394,16 +444,21 @@ class Rf_Site_Functionality_Snippet_Store {
 	 * @return bool
 	 */
 	public function is_loadable_php( $path ) {
-		if ( 'index.php' === basename( $path ) ) {
+		$base = basename( $path );
+		if ( in_array( $base, self::INTERNAL_FILES, true ) ) {
+			return false;
+		}
+		if ( '.disabled.php' === substr( $base, -13 ) || '.error.php' === substr( $base, -10 ) ) {
 			return false;
 		}
 		if ( ! is_file( $path ) || ! is_readable( $path ) ) {
 			return false;
 		}
-		if ( 'mcphp' !== pathinfo( $path, PATHINFO_EXTENSION ) ) {
+		if ( 'php' !== pathinfo( $path, PATHINFO_EXTENSION ) ) {
 			return false;
 		}
-		if ( is_file( $path . '.disabled' ) ) {
+		$disabled_sibling = substr( $path, 0, -4 ) . '.disabled.php';
+		if ( is_file( $disabled_sibling ) || is_file( $path . '.disabled' ) ) {
 			return false;
 		}
 		return $this->is_inside( $path );
@@ -436,6 +491,15 @@ class Rf_Site_Functionality_Snippet_Store {
 		if ( ! $this->is_inside( $paths['disabled'] ) ) {
 			return false;
 		}
+		// Ensure direct-access guard is present before enabling.
+		$source = file_get_contents( $paths['disabled'] );
+		if ( is_string( $source ) ) {
+			require_once __DIR__ . '/class-rf-site-functionality-snippet-meta.php';
+			$guarded = Rf_Site_Functionality_Snippet_Meta::ensure_guard( $source );
+			if ( $guarded !== $source ) {
+				file_put_contents( $paths['disabled'], $guarded );
+			}
+		}
 		return rename( $paths['disabled'], $paths['enabled'] );
 	}
 
@@ -458,7 +522,7 @@ class Rf_Site_Functionality_Snippet_Store {
 	}
 
 	/**
-	 * Rename a loaded snippet off and write a sidecar with the fatal message.
+	 * Rename a loaded snippet off and write a PHP-guarded sidecar with the fatal message.
 	 *
 	 * @param string $path    Absolute path to the .php file.
 	 * @param string $message Fatal message.
@@ -469,16 +533,85 @@ class Rf_Site_Functionality_Snippet_Store {
 		if ( ! $this->is_inside( $path ) || ! is_file( $path ) ) {
 			return false;
 		}
-		if ( 'mcphp' !== pathinfo( $path, PATHINFO_EXTENSION ) ) {
+		$base = basename( $path );
+		if ( in_array( $base, self::INTERNAL_FILES, true ) ) {
 			return false;
 		}
-		$note = $path . '.error';
-		file_put_contents( $note, $message . ' on line ' . (int) $line );
-		$disabled = $path . '.disabled';
+		if ( 'php' !== pathinfo( $path, PATHINFO_EXTENSION ) || '.disabled.php' === substr( $base, -13 ) || '.error.php' === substr( $base, -10 ) ) {
+			return false;
+		}
+		$stem     = substr( $path, 0, -4 );
+		$note     = $stem . '.error.php';
+		$clean    = str_replace( array( "\r", "\n" ), ' ', (string) $message );
+		file_put_contents( $note, "<?php\nexit;\n// " . $clean . ' on line ' . (int) $line . "\n" );
+		$disabled = $stem . '.disabled.php';
 		if ( is_file( $disabled ) ) {
 			return true;
 		}
 		return rename( $path, $disabled );
+	}
+
+	/**
+	 * Migrate legacy .mcphp, .disabled, .error, and snippets-disabled files to PHP-guarded .php names.
+	 *
+	 * @return int Number of files migrated.
+	 */
+	public function migrate_legacy_files() {
+		if ( '' === $this->dir || ! is_dir( $this->dir ) || ! is_writable( $this->dir ) ) {
+			return 0;
+		}
+		$names = scandir( $this->dir );
+		if ( ! is_array( $names ) ) {
+			return 0;
+		}
+		$migrated = 0;
+		require_once __DIR__ . '/class-rf-site-functionality-snippet-meta.php';
+		foreach ( $names as $name ) {
+			if ( '.' === $name || '..' === $name ) {
+				continue;
+			}
+			$path = $this->dir . '/' . $name;
+			if ( ! is_file( $path ) || ! $this->is_inside( $path ) ) {
+				continue;
+			}
+			if ( 'snippets-disabled' === $name ) {
+				if ( ! is_file( $this->flag_path() ) ) {
+					file_put_contents( $this->flag_path(), "<?php\nexit;\n" );
+				}
+				// phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged
+				@unlink( $path );
+				++$migrated;
+				continue;
+			}
+			$target_name = self::storage_basename( $name );
+			if ( $target_name === $name ) {
+				continue;
+			}
+			$target = $this->dir . '/' . $target_name;
+			if ( is_file( $target ) ) {
+				continue;
+			}
+			if ( '.error.php' === substr( $target_name, -10 ) ) {
+				$raw   = trim( (string) file_get_contents( $path ) );
+				$clean = str_replace( array( "\r", "\n" ), ' ', $raw );
+				if ( false !== file_put_contents( $target, "<?php\nexit;\n// " . $clean . "\n" ) ) {
+					// phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged
+					@unlink( $path );
+					++$migrated;
+				}
+				continue;
+			}
+			$source = file_get_contents( $path );
+			if ( is_string( $source ) ) {
+				$guarded = Rf_Site_Functionality_Snippet_Meta::ensure_guard( $source );
+				if ( false !== file_put_contents( $target, $guarded ) ) {
+					// phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged
+					@unlink( $path );
+					++$migrated;
+				}
+			}
+		}
+		return $migrated;
 	}
 
 	/**
@@ -491,7 +624,7 @@ class Rf_Site_Functionality_Snippet_Store {
 			return array();
 		}
 		$snippets = array();
-		$php      = glob( $this->dir . DIRECTORY_SEPARATOR . '*.mcphp' );
+		$php      = glob( $this->dir . DIRECTORY_SEPARATOR . '*.php' );
 		if ( is_array( $php ) ) {
 			foreach ( $php as $path ) {
 				if ( ! $this->is_loadable_php( $path ) ) {
@@ -505,14 +638,14 @@ class Rf_Site_Functionality_Snippet_Store {
 				);
 			}
 		}
-		$disabled = glob( $this->dir . DIRECTORY_SEPARATOR . '*.mcphp.disabled' );
+		$disabled = glob( $this->dir . DIRECTORY_SEPARATOR . '*.disabled.php' );
 		if ( is_array( $disabled ) ) {
 			foreach ( $disabled as $path ) {
 				if ( ! $this->is_inside( $path ) ) {
 					continue;
 				}
-				$name = self::logical_basename( basename( $path, '.disabled' ) );
-				if ( 'index.php' === $name ) {
+				$name = self::logical_basename( basename( $path ) );
+				if ( in_array( $name, self::INTERNAL_FILES, true ) ) {
 					continue;
 				}
 				$snippets[] = array(
@@ -711,10 +844,10 @@ class Rf_Site_Functionality_Snippet_Store {
 	}
 
 	/**
-	 * Map a logical snippet name onto the private file names.
+	 * Map a logical snippet name onto its PHP-guarded on-disk file names.
 	 *
-	 * Callers still say example.php. The file on disk is example.mcphp so a
-	 * direct web request does not execute it.
+	 * Every stored file ends in .php with an ABSPATH/exit guard so Nginx/PHP-FPM
+	 * returns an empty response instead of serving raw source code.
 	 *
 	 * @since 1.2.1
 	 * @param string $filename Logical or disabled file name.
@@ -725,47 +858,68 @@ class Rf_Site_Functionality_Snippet_Store {
 		if ( is_object( $logical ) ) {
 			return $logical;
 		}
-		$disk    = self::storage_basename( $logical );
-		$enabled = $this->dir . '/' . $disk;
+		$stem    = substr( $logical, 0, -4 );
+		$enabled = $this->dir . '/' . $logical;
 		return array(
 			'logical'  => $logical,
-			'disk'     => $disk,
+			'disk'     => $logical,
 			'enabled'  => $enabled,
-			'disabled' => $enabled . '.disabled',
-			'error'    => $enabled . '.error',
+			'disabled' => $this->dir . '/' . $stem . '.disabled.php',
+			'error'    => $this->dir . '/' . $stem . '.error.php',
 		);
 	}
 
 	/**
-	 * example.php becomes example.mcphp. Other names stay put.
+	 * Normalize legacy and logical snippet basenames onto PHP-guarded on-disk names.
+	 *
+	 * example.mcphp -> example.php
+	 * example.php.disabled / example.mcphp.disabled -> example.disabled.php
+	 * example.php.error / example.mcphp.error -> example.error.php
 	 *
 	 * @since 1.2.1
 	 * @param string $name Basename.
 	 * @return string
 	 */
 	public static function storage_basename( $name ) {
+		if ( in_array( $name, self::INTERNAL_FILES, true ) ) {
+			return $name;
+		}
+		if ( '.disabled.php' === substr( $name, -13 ) || '.error.php' === substr( $name, -10 ) ) {
+			return $name;
+		}
 		$suffix = '';
 		if ( '.disabled' === substr( $name, -9 ) ) {
 			$name   = substr( $name, 0, -9 );
-			$suffix = '.disabled';
+			$suffix = '.disabled.php';
 		} elseif ( '.error' === substr( $name, -6 ) ) {
 			$name   = substr( $name, 0, -6 );
-			$suffix = '.error';
+			$suffix = '.error.php';
 		}
-		if ( 'index.php' !== $name && '.php' === substr( $name, -4 ) && '.mcphp' !== substr( $name, -6 ) ) {
-			$name = substr( $name, 0, -4 ) . '.mcphp';
+		if ( '.mcphp' === substr( $name, -6 ) ) {
+			$stem = substr( $name, 0, -6 );
+			return '' !== $suffix ? $stem . $suffix : $stem . '.php';
 		}
-		return $name . $suffix;
+		if ( '.php' === substr( $name, -4 ) ) {
+			$stem = substr( $name, 0, -4 );
+			return '' !== $suffix ? $stem . $suffix : $stem . '.php';
+		}
+		return $name . ( '.disabled.php' === $suffix ? '.disabled' : ( '.error.php' === $suffix ? '.error' : '' ) );
 	}
 
 	/**
-	 * example.mcphp becomes example.php for the editor and abilities.
+	 * Convert any on-disk snippet name back to logical example.php for the editor and abilities.
 	 *
 	 * @since 1.2.1
-	 * @param string $name Disk basename without a .disabled suffix.
+	 * @param string $name Disk basename.
 	 * @return string
 	 */
 	public static function logical_basename( $name ) {
+		if ( '.disabled.php' === substr( $name, -13 ) ) {
+			return substr( $name, 0, -13 ) . '.php';
+		}
+		if ( '.error.php' === substr( $name, -10 ) ) {
+			return substr( $name, 0, -10 ) . '.php';
+		}
 		if ( '.mcphp' === substr( $name, -6 ) ) {
 			return substr( $name, 0, -6 ) . '.php';
 		}
@@ -786,6 +940,11 @@ class Rf_Site_Functionality_Snippet_Store {
 		$filename = str_replace( '\\', '/', $filename );
 		if ( basename( $filename ) !== $filename ) {
 			return new WP_Error( 'rf_site_functionality_invalid_filename', 'Filename must be a single snippet file name.' );
+		}
+		if ( '.disabled.php' === substr( $filename, -13 ) ) {
+			$filename = substr( $filename, 0, -13 ) . '.php';
+		} elseif ( '.error.php' === substr( $filename, -10 ) ) {
+			$filename = substr( $filename, 0, -10 ) . '.php';
 		}
 		if ( '.disabled' === substr( $filename, -9 ) ) {
 			$filename = substr( $filename, 0, -9 );

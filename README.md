@@ -1,6 +1,6 @@
 # Site Functionality
 
-[![WordPress Plugin Version](https://img.shields.io/badge/WordPress%20Plugin-2.1.0-blue.svg)](https://github.com/Roots-and-Fruit/rf-site-functionality)
+[![WordPress Plugin Version](https://img.shields.io/badge/WordPress%20Plugin-2.2.0-blue.svg)](https://github.com/Roots-and-Fruit/rf-site-functionality)
 [![PHP Version](https://img.shields.io/badge/PHP-7.4+-green.svg)](https://php.net/)
 [![WordPress Version](https://img.shields.io/badge/WordPress-5.0+-green.svg)](https://wordpress.org/)
 [![License](https://img.shields.io/badge/License-GPL%20v2%2B-orange.svg)](https://www.gnu.org/licenses/gpl-2.0.html)

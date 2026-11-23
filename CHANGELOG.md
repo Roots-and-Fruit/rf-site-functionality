@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.2.0] - 2026-11-23
+
+Site Functionality now locks down the `wp-content/rf-snippets/` fallback programmatically on Nginx, Apache, LiteSpeed, and IIS with zero server configuration.
+
+### Changed
+
+- When falling back to `wp-content/rf-snippets/`, snippets now live inside an unguessable 128-bit random subfolder (`wp-content/rf-snippets/<32-hex>/`) with `index.php`, `.htaccess`, and `web.config` in both the parent folder and subfolder. Files stored directly in `wp-content/rf-snippets/` from 2.1.0 are moved automatically.
+- The loopback web-access check now probes a PHP-guarded canary (`rf-lockdown-probe.php`) instead of a `.txt` file, so Nginx hosts where PHP-FPM exits with an empty response report as protected instead of showing an unactionable Nginx config warning.
+
+### Fixed
+
+- Fixed Settings storage callouts being hoisted above the plugin tab bar by WordPress admin scripts. Callouts now stay inside the **Snippet Storage** card.
+
+### Security
+
+- Every file written to the snippet directory now ends in `.php` with an `ABSPATH` or `exit` guard at the top (`example.php`, `example.disabled.php`, `example.error.php`, `safe-mode-key.php`, `snippets-disabled.php`), so Nginx/PHP-FPM returns an empty response instead of serving raw snippet source, error notes, or flags over HTTP. Existing `.mcphp`, `.disabled`, `.error`, and `snippets-disabled` files are migrated automatically.
+
 ## [2.1.0] - 2026-11-23
 
 Site Functionality now picks the safest writable snippet directory automatically on locked-down hosts, with zero manual setup.
@@ -72,7 +89,8 @@ Snippets are no longer published from `wp-content/mc-snippets`.
 
 - Unconditional snippets load when plugin files are already available, and before the theme.
 
-[Unreleased]: https://github.com/Roots-and-Fruit/rf-site-functionality/compare/v2.1.0...HEAD
+[Unreleased]: https://github.com/Roots-and-Fruit/rf-site-functionality/compare/v2.2.0...HEAD
+[2.2.0]: https://github.com/Roots-and-Fruit/rf-site-functionality/compare/v2.1.0...v2.2.0
 [2.1.0]: https://github.com/Roots-and-Fruit/rf-site-functionality/compare/v2.0.0...v2.1.0
 [2.0.0]: https://github.com/Roots-and-Fruit/rf-site-functionality/compare/v1.2.2...v2.0.0
 [1.2.2]: https://github.com/Roots-and-Fruit/rf-site-functionality/compare/v1.2.1...v1.2.2

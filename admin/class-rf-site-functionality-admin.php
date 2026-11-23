@@ -619,7 +619,7 @@ class Rf_Site_Functionality_Admin {
 		}
 
 		if ( 'exposed' === $probe_status ) {
-			$paragraphs[] = __( 'Direct HTTP requests reached a test file inside the snippet directory. Add a web server deny rule (such as Nginx deny all) to block direct downloads.', 'rf-site-functionality' );
+			$paragraphs[] = __( 'Direct HTTP requests returned raw PHP source from the snippet directory. Add a web server deny rule to block direct access to wp-content/rf-snippets/.', 'rf-site-functionality' );
 		}
 
 		$actions = '';

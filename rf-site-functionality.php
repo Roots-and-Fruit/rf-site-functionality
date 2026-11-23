@@ -16,7 +16,7 @@
  * Plugin Name:       Site Functionality
  * Plugin URI:        https://github.com/Roots-and-Fruit/rf-site-functionality
  * Description:       A file-based code snippet system for WordPress. Load and execute PHP files from the /code-snippets/ directory with better performance and security than database-stored snippets.
- * Version:           2.1.0
+ * Version:           2.2.0
  * Author:            Matt Cromwell
  * Author URI:        https://www.mattcromwell.com/
  * License:           GPL-2.0+
@@ -35,7 +35,7 @@ if ( ! defined( 'WPINC' ) ) {
  * Start at version 1.0.0 and use SemVer - https://semver.org
  * Rename this for your plugin and update it as you release new versions.
  */
-define( 'RF_SITE_FUNCTIONALITY_VERSION', '2.1.0' );
+define( 'RF_SITE_FUNCTIONALITY_VERSION', '2.2.0' );
 
 require_once plugin_dir_path( __FILE__ ) . 'includes/storage-resolver.php';
 
@@ -83,6 +83,7 @@ function load_rf_site_functionality_snippets() {
 	$store = new Rf_Site_Functionality_Snippet_Store();
 	Rf_Site_Functionality_Snippet_Migration::relocate_public_snippets( rf_site_functionality_public_snippets_dir(), $store->get_dir() );
 	$store->ensure_dir();
+	$store->migrate_legacy_files();
 	$store->ensure_key();
 	Rf_Site_Functionality_Snippet_Migration::copy_once( rf_site_functionality_legacy_snippets_dir(), $store->get_dir() );
 
