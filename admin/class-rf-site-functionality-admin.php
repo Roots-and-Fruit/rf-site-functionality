@@ -603,10 +603,23 @@ class Rf_Site_Functionality_Admin {
 			);
 		}
 
+		$storage_info   = function_exists( 'rf_site_functionality_storage_info' ) ? rf_site_functionality_storage_info() : null;
+		$probe_status   = $store->probe_web_access( $storage_info, false );
+
 		if ( $writable ) {
-			$paragraphs[] = __( 'The snippet directory is writable.', 'rf-site-functionality' );
+			if ( is_array( $storage_info ) && 'wp_content' === $storage_info['tier'] ) {
+				$paragraphs[] = __( 'The snippet directory is writable (automatic fallback in wp-content/rf-snippets).', 'rf-site-functionality' );
+			} elseif ( is_array( $storage_info ) && 'outside_root' === $storage_info['tier'] ) {
+				$paragraphs[] = __( 'The snippet directory is writable and outside the web root.', 'rf-site-functionality' );
+			} else {
+				$paragraphs[] = __( 'The snippet directory is writable.', 'rf-site-functionality' );
+			}
 		} else {
 			$paragraphs[] = __( 'The snippet directory is not writable, so snippets cannot be saved.', 'rf-site-functionality' );
+		}
+
+		if ( 'exposed' === $probe_status ) {
+			$paragraphs[] = __( 'Direct HTTP requests reached a test file inside the snippet directory. Add a web server deny rule (such as Nginx deny all) to block direct downloads.', 'rf-site-functionality' );
 		}
 
 		$actions = '';
@@ -624,6 +637,9 @@ class Rf_Site_Functionality_Admin {
 		if ( ! $writable ) {
 			$status = 'critical';
 			$label  = __( 'Site Functionality cannot write snippets', 'rf-site-functionality' );
+		} elseif ( 'exposed' === $probe_status ) {
+			$status = 'recommended';
+			$label  = __( 'Site Functionality snippet folder should be blocked from direct web access', 'rf-site-functionality' );
 		} elseif ( $safe ) {
 			$status = 'recommended';
 			$label  = __( 'Site Functionality safe mode is on', 'rf-site-functionality' );
@@ -849,6 +865,9 @@ class Rf_Site_Functionality_Admin {
 		$filename = $this->generate_filename_from_name( $name );
 		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-rf-site-functionality-snippet-store.php';
 		$store = new Rf_Site_Functionality_Snippet_Store();
+		if ( ! $store->ensure_dir() ) {
+			wp_send_json_error( 'Snippet directory is not writable' );
+		}
 		$paths = $store->file_paths( $filename );
 		if ( is_wp_error( $paths ) ) {
 			wp_send_json_error( 'Invalid filename' );

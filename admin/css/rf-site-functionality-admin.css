@@ -1448,6 +1448,52 @@ body.plugins_page_rf-site-functionality #wpfooter {
 	margin-top: var(--rf-space-6);
 }
 
+.mc-storage-meta {
+	margin: 0;
+	border: 1px solid var(--rf-rule);
+	border-radius: var(--rf-radius-sm);
+	background: var(--rf-white);
+}
+
+.mc-storage-meta__row {
+	display: grid;
+	grid-template-columns: 11rem minmax(0, 1fr);
+	gap: var(--rf-space-3);
+	padding: var(--rf-space-3) var(--rf-space-4);
+	border-bottom: 1px solid var(--rf-rule);
+}
+
+.mc-storage-meta__row:last-child {
+	border-bottom: 0;
+}
+
+.mc-storage-meta dt {
+	margin: 0;
+	color: var(--rf-ink-deep);
+	font-weight: 700;
+	font-size: var(--rf-text-sm);
+}
+
+.mc-storage-meta dd {
+	margin: 0;
+	color: var(--rf-ink);
+	font-size: var(--rf-text-sm);
+	word-break: break-word;
+}
+
+.mc-storage-meta__recheck {
+	margin-left: var(--rf-space-2);
+}
+
+.mc-storage-nginx {
+	margin: var(--rf-space-2) 0 0;
+	padding: var(--rf-space-3);
+	border-radius: var(--rf-radius-sm);
+	background: var(--rf-white);
+	border: 1px solid var(--rf-rule);
+	overflow-x: auto;
+}
+
 .mc-settings-theme__preview {
 	flex: 0 0 18rem;
 	width: 18rem;

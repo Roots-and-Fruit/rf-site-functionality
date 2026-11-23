@@ -38,7 +38,7 @@ class Rf_Site_Functionality_Snippet_Store {
 	}
 
 	/**
-	 * Create the directory if it is missing.
+	 * Create the directory if it is missing and write web-access lockdown files.
 	 *
 	 * @return bool
 	 */
@@ -46,24 +46,53 @@ class Rf_Site_Functionality_Snippet_Store {
 		if ( '' === $this->dir ) {
 			return false;
 		}
-		if ( ! is_dir( $this->dir ) && ! mkdir( $this->dir, 0755, true ) ) {
+		// phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged
+		if ( ! is_dir( $this->dir ) && ! @mkdir( $this->dir, 0755, true ) ) {
+			return false;
+		}
+		if ( ! is_writable( $this->dir ) ) {
 			return false;
 		}
 		$index = $this->dir . '/index.php';
 		if ( ! is_file( $index ) ) {
 			file_put_contents( $index, "<?php\n// Silence is golden.\n" );
 		}
-		$htaccess = $this->dir . '/.htaccess';
-		if ( ! is_file( $htaccess ) ) {
-			file_put_contents( $htaccess, "<Files \"*\">\nRequire all denied\n</Files>\n" );
+		$htaccess         = $this->dir . '/.htaccess';
+		$legacy_htaccess  = "<Files \"*\">\nRequire all denied\n</Files>\n";
+		$desired_htaccess = "Options -Indexes\n<IfModule mod_authz_core.c>\n\tRequire all denied\n</IfModule>\n<IfModule !mod_authz_core.c>\n\tOrder allow,deny\n\tDeny from all\n</IfModule>\n";
+		if ( ! is_file( $htaccess ) || $legacy_htaccess === file_get_contents( $htaccess ) ) {
+			file_put_contents( $htaccess, $desired_htaccess );
+		}
+		$web_config = $this->dir . '/web.config';
+		if ( ! is_file( $web_config ) ) {
+			$iis = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
+				. "<configuration>\n"
+				. "\t<system.webServer>\n"
+				. "\t\t<authorization>\n"
+				. "\t\t\t<deny users=\"*\" />\n"
+				. "\t\t</authorization>\n"
+				. "\t</system.webServer>\n"
+				. "</configuration>\n";
+			file_put_contents( $web_config, $iis );
 		}
 		return true;
 	}
 
 	/**
+	 * PHP-guarded safe-mode key file so Nginx/PHP-FPM cannot serve the secret.
+	 *
 	 * @return string
 	 */
 	public function key_path() {
+		return $this->dir . '/safe-mode-key.php';
+	}
+
+	/**
+	 * Legacy plain-text safe-mode key path (pre-2.1.0).
+	 *
+	 * @return string
+	 */
+	public function legacy_key_path() {
 		return $this->dir . '/safe-mode.key';
 	}
 
@@ -75,19 +104,56 @@ class Rf_Site_Functionality_Snippet_Store {
 	}
 
 	/**
+	 * Read the safe-mode key from the PHP-guarded file or legacy key file.
+	 *
+	 * @return string
+	 */
+	public function read_key() {
+		$path = $this->key_path();
+		if ( is_file( $path ) && is_readable( $path ) ) {
+			$raw = (string) file_get_contents( $path );
+			if ( preg_match( '/^\/\/\s*([a-f0-9]{16,128})\s*$/mi', $raw, $match ) ) {
+				return trim( $match[1] );
+			}
+		}
+		$legacy = $this->legacy_key_path();
+		if ( is_file( $legacy ) && is_readable( $legacy ) ) {
+			return trim( (string) file_get_contents( $legacy ) );
+		}
+		return '';
+	}
+
+	/**
 	 * @return string
 	 */
 	public function ensure_key() {
-		$this->ensure_dir();
-		$path = $this->key_path();
+		if ( ! $this->ensure_dir() ) {
+			return '';
+		}
+		$path   = $this->key_path();
+		$legacy = $this->legacy_key_path();
 		if ( is_file( $path ) ) {
-			$key = trim( (string) file_get_contents( $path ) );
+			$key = $this->read_key();
 			if ( '' !== $key ) {
+				if ( is_file( $legacy ) ) {
+					// phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged
+					@unlink( $legacy );
+				}
 				return $key;
 			}
 		}
-		$key = bin2hex( random_bytes( 16 ) );
-		file_put_contents( $path, $key );
+		$key = '';
+		if ( is_file( $legacy ) && is_readable( $legacy ) ) {
+			$key = trim( (string) file_get_contents( $legacy ) );
+		}
+		if ( '' === $key ) {
+			$key = bin2hex( random_bytes( 16 ) );
+		}
+		$payload = "<?php\nexit;\n// " . $key . "\n";
+		if ( false !== file_put_contents( $path, $payload ) && is_file( $legacy ) ) {
+			// phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged
+			@unlink( $legacy );
+		}
 		return $key;
 	}
 
@@ -105,16 +171,113 @@ class Rf_Site_Functionality_Snippet_Store {
 	 * @return bool Whether the flag was written.
 	 */
 	public function maybe_disable( $secret ) {
-		$key_path = $this->key_path();
-		if ( ! is_file( $key_path ) ) {
-			return false;
-		}
-		$key = trim( (string) file_get_contents( $key_path ) );
+		$key = $this->read_key();
 		if ( '' === $key || ! is_string( $secret ) || ! hash_equals( $key, $secret ) ) {
 			return false;
 		}
-		file_put_contents( $this->flag_path(), '1' );
-		return true;
+		return false !== file_put_contents( $this->flag_path(), '1' );
+	}
+
+	/**
+	 * Public URL for this directory when it sits inside WP_CONTENT_DIR or ABSPATH.
+	 *
+	 * @return string Empty string when outside the web root.
+	 */
+	public function public_url() {
+		if ( '' === $this->dir ) {
+			return '';
+		}
+		$real_dir = realpath( $this->dir );
+		$norm_dir = rtrim( str_replace( '\\', '/', false !== $real_dir ? $real_dir : $this->dir ), '/' );
+		if ( defined( 'WP_CONTENT_DIR' ) && defined( 'WP_CONTENT_URL' ) ) {
+			$real_content = realpath( WP_CONTENT_DIR );
+			$norm_content = rtrim( str_replace( '\\', '/', false !== $real_content ? $real_content : WP_CONTENT_DIR ), '/' );
+			$cmp_dir      = DIRECTORY_SEPARATOR === '\\' ? strtolower( $norm_dir ) : $norm_dir;
+			$cmp_content  = DIRECTORY_SEPARATOR === '\\' ? strtolower( $norm_content ) : $norm_content;
+			if ( 0 === strpos( $cmp_dir, $cmp_content . '/' ) ) {
+				$rel = substr( $norm_dir, strlen( $norm_content ) );
+				return rtrim( WP_CONTENT_URL, '/' ) . $rel;
+			}
+		}
+		if ( defined( 'ABSPATH' ) && function_exists( 'site_url' ) ) {
+			$real_abs = realpath( ABSPATH );
+			$norm_abs = rtrim( str_replace( '\\', '/', false !== $real_abs ? $real_abs : ABSPATH ), '/' );
+			$cmp_dir  = DIRECTORY_SEPARATOR === '\\' ? strtolower( $norm_dir ) : $norm_dir;
+			$cmp_abs  = DIRECTORY_SEPARATOR === '\\' ? strtolower( $norm_abs ) : $norm_abs;
+			if ( 0 === strpos( $cmp_dir, $cmp_abs . '/' ) ) {
+				$rel = substr( $norm_dir, strlen( $norm_abs ) );
+				return rtrim( site_url(), '/' ) . $rel;
+			}
+		}
+		return '';
+	}
+
+	/**
+	 * Probe whether direct HTTP requests to this directory are blocked.
+	 *
+	 * Returns one of: 'outside_root', 'unwritable', 'blocked', 'exposed', 'unverified'.
+	 *
+	 * @param array<string, mixed>|null $storage_info Optional storage resolution info.
+	 * @param bool                      $force        Bypass the transient cache.
+	 * @return string
+	 */
+	public function probe_web_access( $storage_info = null, $force = false ) {
+		if ( is_array( $storage_info ) && empty( $storage_info['inside_web_root'] ) ) {
+			return 'outside_root';
+		}
+		$base_url = $this->public_url();
+		if ( '' === $base_url ) {
+			return 'outside_root';
+		}
+		if ( ! is_dir( $this->dir ) || ! is_writable( $this->dir ) ) {
+			return 'unwritable';
+		}
+		$cache_key = 'rf_sf_probe_' . substr( md5( $this->dir ), 0, 12 );
+		if ( ! $force && function_exists( 'get_transient' ) ) {
+			$cached = get_transient( $cache_key );
+			if ( is_string( $cached ) && in_array( $cached, array( 'blocked', 'exposed', 'unverified' ), true ) ) {
+				return $cached;
+			}
+		}
+		if ( ! function_exists( 'wp_remote_get' ) ) {
+			return 'unverified';
+		}
+		$token      = 'rf-probe-' . bin2hex( random_bytes( 8 ) );
+		$probe_file = $this->dir . '/rf-lockdown-probe.txt';
+		if ( false === file_put_contents( $probe_file, $token ) ) {
+			return 'unwritable';
+		}
+		$status = 'unverified';
+		try {
+			$response = wp_remote_get(
+				$base_url . '/rf-lockdown-probe.txt',
+				array(
+					'timeout'     => 3,
+					'redirection' => 0,
+					'sslverify'   => false,
+				)
+			);
+			if ( ! is_wp_error( $response ) ) {
+				$code = (int) wp_remote_retrieve_response_code( $response );
+				$body = (string) wp_remote_retrieve_body( $response );
+				if ( 200 === $code && false !== strpos( $body, $token ) ) {
+					$status = 'exposed';
+				} elseif ( $code >= 400 && $code < 500 ) {
+					$status = 'blocked';
+				} elseif ( 200 === $code && false === strpos( $body, $token ) ) {
+					$status = 'blocked';
+				}
+			}
+		} finally {
+			if ( is_file( $probe_file ) ) {
+				// phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged
+				@unlink( $probe_file );
+			}
+		}
+		if ( function_exists( 'set_transient' ) ) {
+			set_transient( $cache_key, $status, HOUR_IN_SECONDS );
+		}
+		return $status;
 	}
 
 	/**
@@ -197,7 +360,7 @@ class Rf_Site_Functionality_Snippet_Store {
 		if ( basename( $filename ) !== $filename ) {
 			return false;
 		}
-		if ( 'index.php' === $filename ) {
+		if ( 'index.php' === $filename || 'safe-mode-key.php' === $filename ) {
 			return false;
 		}
 		return 1 === preg_match( '/^[a-zA-Z0-9\-_\.]+\.php(\.disabled)?$/', $filename );

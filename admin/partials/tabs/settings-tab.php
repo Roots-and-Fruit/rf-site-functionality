@@ -84,6 +84,93 @@ $mc_safe_off         = _x( 'Off', 'toggle state', 'rf-site-functionality' );
 		</form>
 	</section>
 
+	<section class="mc-setting">
+		<h3><?php esc_html_e( 'Snippet Storage', 'rf-site-functionality' ); ?></h3>
+		<p class="mc-setting__description"><?php esc_html_e( 'Site Functionality picks the safest writable folder automatically. These details are read-only for support and verification.', 'rf-site-functionality' ); ?></p>
+		<?php
+		$mc_storage      = function_exists( 'rf_site_functionality_storage_info' ) ? rf_site_functionality_storage_info() : array(
+			'dir'             => $mc_store->get_dir(),
+			'tier'            => 'custom',
+			'fallback_reason' => '',
+			'inside_web_root' => false,
+			'writable'        => '' !== $mc_store->get_dir() && is_dir( $mc_store->get_dir() ) && is_writable( $mc_store->get_dir() ),
+		);
+		$mc_force_probe  = isset( $_GET['rf_recheck_storage'] ) && '1' === sanitize_text_field( wp_unslash( $_GET['rf_recheck_storage'] ) );
+		$mc_probe_status = $mc_store->probe_web_access( $mc_storage, $mc_force_probe );
+		$mc_writable     = '' !== $mc_store->get_dir() && is_dir( $mc_store->get_dir() ) && is_writable( $mc_store->get_dir() );
+
+		$mc_tier_labels = array(
+			'outside_root' => __( 'Private directory outside the web root', 'rf-site-functionality' ),
+			'wp_content'   => __( 'Locked-down directory in wp-content/rf-snippets', 'rf-site-functionality' ),
+			'custom'       => __( 'Custom directory (RF_SITE_FUNCTIONALITY_SNIPPETS_DIR)', 'rf-site-functionality' ),
+			'unwritable'   => __( 'Not writable', 'rf-site-functionality' ),
+		);
+		$mc_tier_label = isset( $mc_tier_labels[ $mc_storage['tier'] ] ) ? $mc_tier_labels[ $mc_storage['tier'] ] : $mc_storage['tier'];
+
+		$mc_reason_labels = array(
+			'open_basedir'        => __( 'PHP open_basedir restricts access outside the web root.', 'rf-site-functionality' ),
+			'parent_not_writable' => __( 'The parent directory of the web root is not writable by PHP.', 'rf-site-functionality' ),
+			'dir_not_writable'    => __( 'The sibling directory outside the web root is not writable by PHP.', 'rf-site-functionality' ),
+			'mkdir_failed'        => __( 'PHP could not create a sibling directory next to the web root.', 'rf-site-functionality' ),
+		);
+		$mc_reason_text = ( ! empty( $mc_storage['fallback_reason'] ) && isset( $mc_reason_labels[ $mc_storage['fallback_reason'] ] ) )
+			? $mc_reason_labels[ $mc_storage['fallback_reason'] ]
+			: '';
+
+		$mc_probe_labels = array(
+			'outside_root' => __( 'Protected — directory is outside the web root.', 'rf-site-functionality' ),
+			'blocked'      => __( 'Protected — direct HTTP requests are blocked.', 'rf-site-functionality' ),
+			'unverified'   => __( 'Hardened (.htaccess, web.config, index.php, PHP-guarded key) — loopback check unavailable on this host.', 'rf-site-functionality' ),
+			'exposed'      => __( 'Action recommended — direct HTTP requests reached a test file in this folder.', 'rf-site-functionality' ),
+			'unwritable'   => __( 'Unavailable — directory is not writable.', 'rf-site-functionality' ),
+		);
+		$mc_probe_label = isset( $mc_probe_labels[ $mc_probe_status ] ) ? $mc_probe_labels[ $mc_probe_status ] : $mc_probe_status;
+		?>
+		<dl class="mc-storage-meta">
+			<div class="mc-storage-meta__row">
+				<dt><?php esc_html_e( 'Location', 'rf-site-functionality' ); ?></dt>
+				<dd><code><?php echo esc_html( $mc_store->get_dir() ); ?></code></dd>
+			</div>
+			<div class="mc-storage-meta__row">
+				<dt><?php esc_html_e( 'Storage mode', 'rf-site-functionality' ); ?></dt>
+				<dd><?php echo esc_html( $mc_tier_label ); ?></dd>
+			</div>
+			<?php if ( '' !== $mc_reason_text ) : ?>
+			<div class="mc-storage-meta__row">
+				<dt><?php esc_html_e( 'Fallback reason', 'rf-site-functionality' ); ?></dt>
+				<dd><?php echo esc_html( $mc_reason_text ); ?></dd>
+			</div>
+			<?php endif; ?>
+			<div class="mc-storage-meta__row">
+				<dt><?php esc_html_e( 'Status', 'rf-site-functionality' ); ?></dt>
+				<dd><?php echo esc_html( $mc_writable ? __( 'Writable', 'rf-site-functionality' ) : __( 'Not writable', 'rf-site-functionality' ) ); ?></dd>
+			</div>
+			<div class="mc-storage-meta__row">
+				<dt><?php esc_html_e( 'Web access', 'rf-site-functionality' ); ?></dt>
+				<dd>
+					<?php echo esc_html( $mc_probe_label ); ?>
+					<?php if ( ! empty( $mc_storage['inside_web_root'] ) && $mc_writable ) : ?>
+						<a class="mc-storage-meta__recheck" href="<?php echo esc_url( add_query_arg( array( 'page' => 'rf-site-functionality', 'tab' => 'settings', 'rf_recheck_storage' => '1' ), admin_url( 'plugins.php' ) ) ); ?>"><?php esc_html_e( 'Re-check', 'rf-site-functionality' ); ?></a>
+					<?php endif; ?>
+				</dd>
+			</div>
+		</dl>
+
+		<?php if ( ! $mc_writable ) : ?>
+			<div class="notice notice-error mc-settings__notice">
+				<p><?php esc_html_e( 'Site Functionality cannot write to its snippet directory. Check filesystem permissions for wp-content or set RF_SITE_FUNCTIONALITY_SNIPPETS_DIR in wp-config.php.', 'rf-site-functionality' ); ?></p>
+			</div>
+		<?php elseif ( 'exposed' === $mc_probe_status ) : ?>
+			<div class="notice notice-warning mc-settings__notice">
+				<p><?php esc_html_e( 'Your web server served a test file from the snippet folder (common on Nginx, which ignores .htaccess). Snippets still cannot execute directly and the safe-mode key is PHP-guarded, but adding this Nginx rule blocks direct downloads of snippet files:', 'rf-site-functionality' ); ?></p>
+				<pre class="mc-storage-nginx"><code>location ^~ /wp-content/rf-snippets/ {
+    deny all;
+    return 403;
+}</code></pre>
+			</div>
+		<?php endif; ?>
+	</section>
+
 	<?php
 	require_once dirname( __DIR__, 3 ) . '/includes/class-rf-site-functionality-standalone.php';
 	$mc_mu_file = WP_CONTENT_DIR . '/mu-plugins/rf-site-functionality-loader.php';

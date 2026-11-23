@@ -4,7 +4,7 @@ Donate link: https://www.mattcromwell.com/
 Tags: snippets, code, php
 Requires at least: 6.0
 Tested up to: 7.1
-Stable tag: 2.0.0
+Stable tag: 2.1.0
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -21,6 +21,31 @@ Site Functionality keeps small pieces of PHP as files beside WordPress. Snippets
 2. Activate Site Functionality from the Plugins screen.
 
 == Changelog ==
+
+= 2.1.0 =
+Released 2026-11-23.
+
+Site Functionality now picks the safest writable snippet directory automatically on locked-down hosts, with zero manual setup.
+
+**Added**
+
+* Read-only **Snippet Storage** status on **Plugins → Site Functionality → Settings** showing the resolved directory, active storage mode, fallback reason (when applicable), and web-access protection check, with a copyable Nginx `deny all` rule if direct HTTP access is still open.
+* Automatic loopback HTTP probe when snippets are stored inside `wp-content/rf-snippets/`, surfaced in both Settings and **Tools → Site Health**.
+
+**Changed**
+
+* When the parent directory of WordPress (`ABSPATH`) is not writable or blocked by `open_basedir`, Site Functionality now automatically falls back to a locked-down `wp-content/rf-snippets/` folder instead of failing or writing snippets to an ephemeral system temp directory. Snippets previously stored in the system temp folder are migrated forward automatically.
+* Explicit `RF_SITE_FUNCTIONALITY_SNIPPETS_DIR` constants in `wp-config.php` continue to take highest precedence.
+
+**Fixed**
+
+* Fixed activation and snippet creation failures on managed hosts where `open_basedir` is empty but PHP does not have permission to create a sibling directory next to `/public_html`.
+* Fixed sibling directory path resolution on case-sensitive Linux and macOS filesystems when parent folder names contain uppercase letters.
+
+**Security**
+
+* Hardened `wp-content/rf-snippets/` against direct web access by writing `index.php`, Apache 2.2/2.4 and LiteSpeed `.htaccess` rules (`Options -Indexes` plus deny rules), and an IIS `web.config`.
+* Moved the safe-mode secret from plain-text `safe-mode.key` into a PHP-guarded `safe-mode-key.php` file (`exit;` before the comment) so servers like Nginx that ignore `.htaccess` cannot serve the key over HTTP. Existing keys are migrated automatically and the old plain-text file is deleted.
 
 = 2.0.0 =
 Released 2026-10-21.

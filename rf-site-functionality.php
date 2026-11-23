@@ -16,7 +16,7 @@
  * Plugin Name:       Site Functionality
  * Plugin URI:        https://github.com/Roots-and-Fruit/rf-site-functionality
  * Description:       A file-based code snippet system for WordPress. Load and execute PHP files from the /code-snippets/ directory with better performance and security than database-stored snippets.
- * Version:           2.0.0
+ * Version:           2.1.0
  * Author:            Matt Cromwell
  * Author URI:        https://www.mattcromwell.com/
  * License:           GPL-2.0+
@@ -35,90 +35,9 @@ if ( ! defined( 'WPINC' ) ) {
  * Start at version 1.0.0 and use SemVer - https://semver.org
  * Rename this for your plugin and update it as you release new versions.
  */
-define( 'RF_SITE_FUNCTIONALITY_VERSION', '2.0.0' );
+define( 'RF_SITE_FUNCTIONALITY_VERSION', '2.1.0' );
 
-/**
- * Whether $path is inside open_basedir. An empty restriction allows every path.
- *
- * @param string $path    Absolute path.
- * @param string $basedir open_basedir value.
- * @return bool
- */
-function rf_site_functionality_path_allowed( $path, $basedir ) {
-	if ( ! is_string( $basedir ) || '' === $basedir ) {
-		return true;
-	}
-	$path = strtolower( str_replace( '\\', '/', $path ) );
-	foreach ( explode( PATH_SEPARATOR, $basedir ) as $allowed ) {
-		$allowed = strtolower( rtrim( str_replace( '\\', '/', $allowed ), '/' ) );
-		if ( '' !== $allowed && ( $path === $allowed || 0 === strpos( $path, $allowed . '/' ) ) ) {
-			return true;
-		}
-	}
-	return false;
-}
-
-/**
- * Folder name for this site's private snippet directory.
- *
- * The hash keeps two sites on the same machine from sharing one folder.
- *
- * @return string
- */
-function rf_site_functionality_snippet_folder_name() {
-	$root = strtolower( rtrim( str_replace( '\\', '/', ABSPATH ), '/' ) );
-	return 'mc-snippets-' . substr( md5( $root ), 0, 12 );
-}
-
-/**
- * Preferred snippet directory, next to WordPress and outside the web root.
- *
- * @return string
- */
-function rf_site_functionality_sibling_snippets_dir() {
-	$root = strtolower( rtrim( str_replace( '\\', '/', ABSPATH ), '/' ) );
-	return dirname( str_replace( '/', DIRECTORY_SEPARATOR, $root ) ) . DIRECTORY_SEPARATOR . rf_site_functionality_snippet_folder_name();
-}
-
-/**
- * Temp fallback used when open_basedir blocks the sibling directory.
- *
- * @return string
- */
-function rf_site_functionality_temp_snippets_dir() {
-	return rtrim( sys_get_temp_dir(), '/\\' ) . DIRECTORY_SEPARATOR . rf_site_functionality_snippet_folder_name();
-}
-
-/**
- * Snippet directory outside the web root.
- *
- * A normal host gets a folder next to WordPress. If open_basedir blocks that
- * path, snippets stay in the system temp directory until the sibling path is
- * writable. The temp copy is moved and then removed.
- *
- * @return string
- */
-function rf_site_functionality_private_snippets_dir() {
-	$sibling = rf_site_functionality_sibling_snippets_dir();
-	$temp    = rf_site_functionality_temp_snippets_dir();
-	$basedir = (string) ini_get( 'open_basedir' );
-	if ( ! rf_site_functionality_path_allowed( $sibling, $basedir ) ) {
-		return $temp;
-	}
-	if ( is_dir( $temp ) ) {
-		require_once plugin_dir_path( __FILE__ ) . 'includes/class-rf-site-functionality-snippet-migration.php';
-		if ( ! Rf_Site_Functionality_Snippet_Migration::adopt_store( $temp, $sibling ) ) {
-			return $temp;
-		}
-	}
-	if ( is_dir( $sibling ) ) {
-		$real = realpath( $sibling );
-		if ( is_string( $real ) && '' !== $real ) {
-			return $real;
-		}
-	}
-	return $sibling;
-}
+require_once plugin_dir_path( __FILE__ ) . 'includes/storage-resolver.php';
 
 /**
  * Plugin snippets directory path.
@@ -126,6 +45,12 @@ function rf_site_functionality_private_snippets_dir() {
  */
 if ( ! defined( 'RF_SITE_FUNCTIONALITY_SNIPPETS_DIR' ) ) {
 	define( 'RF_SITE_FUNCTIONALITY_SNIPPETS_DIR', rf_site_functionality_private_snippets_dir() );
+} else {
+	rf_site_functionality_storage_info(
+		rf_site_functionality_resolve_storage(
+			array( 'custom_dir' => RF_SITE_FUNCTIONALITY_SNIPPETS_DIR )
+		)
+	);
 }
 
 /**

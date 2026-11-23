@@ -759,6 +759,144 @@ function mc_run_phase8() {
 	fwrite( STDOUT, "phase 8 ok\n" );
 }
 
+/**
+ * Phase 9: automatic storage fallback, case preservation, and web-root lockdown.
+ *
+ * @return void
+ */
+function mc_run_phase9() {
+	global $failed, $plugin_dir;
+
+	require_once $plugin_dir . '/includes/storage-resolver.php';
+
+	$base = sys_get_temp_dir() . '/rf-site-functionality-phase9-' . getmypid();
+	mc_rrmdir( $base );
+	$site_parent = $base . '/UpperCaseHost';
+	$abspath     = $site_parent . '/public_html';
+	$wp_content  = $abspath . '/wp-content';
+	$temp_root   = $base . '/tmp';
+	mkdir( $wp_content, 0755, true );
+	mkdir( $temp_root, 0755, true );
+
+	// 1. Sibling path preserves case of parent directory.
+	$sibling_path = rf_site_functionality_sibling_snippets_dir( $abspath );
+	mc_assert( false !== strpos( $sibling_path, 'UpperCaseHost' ), 'sibling path preserves filesystem case' );
+
+	// 2. Writable parent chooses outside_root.
+	$outside = rf_site_functionality_resolve_storage(
+		array(
+			'abspath'        => $abspath,
+			'wp_content_dir' => $wp_content,
+			'open_basedir'   => '',
+			'temp_dir'       => $temp_root,
+		)
+	);
+	mc_assert( 'outside_root' === $outside['tier'], 'writable parent selects outside_root' );
+	mc_assert( false === $outside['inside_web_root'], 'outside_root is not inside web root' );
+	mc_assert( true === $outside['writable'], 'outside_root is writable' );
+	mc_assert( is_dir( $outside['dir'] ), 'outside_root directory was created' );
+
+	// 3. open_basedir restricting to abspath falls back to wp-content/rf-snippets and adopts temp snippets.
+	$legacy_temp = rf_site_functionality_temp_snippets_dir( $abspath, $temp_root );
+	mkdir( $legacy_temp, 0755, true );
+	file_put_contents( $legacy_temp . '/from-temp.mcphp', "<?php\n// migrated\n" );
+	$fallback_ob = rf_site_functionality_resolve_storage(
+		array(
+			'abspath'        => $abspath,
+			'wp_content_dir' => $wp_content,
+			'open_basedir'   => $abspath . PATH_SEPARATOR . $temp_root,
+			'temp_dir'       => $temp_root,
+		)
+	);
+	mc_assert( 'wp_content' === $fallback_ob['tier'], 'open_basedir restriction falls back to wp_content' );
+	mc_assert( 'open_basedir' === $fallback_ob['fallback_reason'], 'fallback reason records open_basedir' );
+	mc_assert( true === $fallback_ob['inside_web_root'], 'wp_content fallback is marked inside web root' );
+	mc_assert( 'rf-snippets' === basename( $fallback_ob['dir'] ), 'wp_content fallback uses rf-snippets folder' );
+	mc_assert( is_file( $fallback_ob['dir'] . '/from-temp.mcphp' ), 'legacy temp snippet is adopted into wp-content/rf-snippets' );
+	mc_assert( ! is_dir( $legacy_temp ), 'legacy temp folder is removed after adoption' );
+
+	// 4. Non-existent/unwritable parent of ABSPATH falls back to wp-content/rf-snippets cleanly.
+	$missing_parent_abs = $base . '/nonexistent-parent/public_html';
+	$fallback_nw        = rf_site_functionality_resolve_storage(
+		array(
+			'abspath'        => $missing_parent_abs,
+			'wp_content_dir' => $wp_content,
+			'open_basedir'   => '',
+			'temp_dir'       => $temp_root,
+		)
+	);
+	mc_assert( 'wp_content' === $fallback_nw['tier'], 'unwritable parent falls back to wp_content' );
+	mc_assert( 'parent_not_writable' === $fallback_nw['fallback_reason'], 'fallback reason records parent_not_writable' );
+
+	// 5. Explicit custom_dir override wins.
+	$custom_dir = $base . '/custom-snippets';
+	mkdir( $custom_dir, 0755, true );
+	$custom = rf_site_functionality_resolve_storage(
+		array(
+			'abspath'        => $abspath,
+			'wp_content_dir' => $wp_content,
+			'custom_dir'     => $custom_dir,
+		)
+	);
+	mc_assert( 'custom' === $custom['tier'], 'custom_dir wins as custom tier' );
+	mc_assert( $custom_dir === $custom['dir'], 'custom_dir path is returned unchanged' );
+
+	// 6. Lockdown files and PHP-guarded safe-mode key.
+	$store = new Rf_Site_Functionality_Snippet_Store( $fallback_ob['dir'] );
+	mc_assert( true === $store->ensure_dir(), 'ensure_dir succeeds on wp-content/rf-snippets' );
+	$htaccess = (string) file_get_contents( $fallback_ob['dir'] . '/.htaccess' );
+	mc_assert( false !== strpos( $htaccess, 'Require all denied' ), '.htaccess includes Apache 2.4 deny' );
+	mc_assert( false !== strpos( $htaccess, 'Deny from all' ), '.htaccess includes Apache 2.2 deny' );
+	mc_assert( false !== strpos( $htaccess, 'Options -Indexes' ), '.htaccess disables directory indexes' );
+	$web_config = (string) file_get_contents( $fallback_ob['dir'] . '/web.config' );
+	mc_assert( false !== strpos( $web_config, '<deny users="*" />' ), 'web.config denies all users on IIS' );
+	mc_assert( is_file( $fallback_ob['dir'] . '/index.php' ), 'index.php is created' );
+
+	// Legacy safe-mode.key migrates to PHP-guarded safe-mode-key.php and is deleted.
+	file_put_contents( $fallback_ob['dir'] . '/safe-mode.key', '0123456789abcdef0123456789abcdef' );
+	$key = $store->ensure_key();
+	mc_assert( '0123456789abcdef0123456789abcdef' === $key, 'ensure_key preserves legacy key value during migration' );
+	mc_assert( is_file( $fallback_ob['dir'] . '/safe-mode-key.php' ), 'safe-mode-key.php is written' );
+	mc_assert( ! is_file( $fallback_ob['dir'] . '/safe-mode.key' ), 'legacy plain-text safe-mode.key is removed' );
+	mc_assert( true === $store->maybe_disable( $key ), 'maybe_disable accepts migrated key' );
+
+	// Executing safe-mode-key.php directly via PHP outputs nothing (Nginx/PHP-FPM safe).
+	$php  = defined( 'PHP_BINARY' ) ? PHP_BINARY : 'php';
+	$spec = array(
+		0 => array( 'pipe', 'r' ),
+		1 => array( 'pipe', 'w' ),
+		2 => array( 'pipe', 'w' ),
+	);
+	$proc = proc_open( escapeshellarg( $php ) . ' ' . escapeshellarg( $fallback_ob['dir'] . '/safe-mode-key.php' ), $spec, $pipes );
+	$out  = '';
+	if ( is_resource( $proc ) ) {
+		fclose( $pipes[0] );
+		$out = (string) stream_get_contents( $pipes[1] );
+		stream_get_contents( $pipes[2] );
+		fclose( $pipes[1] );
+		fclose( $pipes[2] );
+		proc_close( $proc );
+	}
+	mc_assert( '' === trim( $out ), 'direct PHP execution of safe-mode-key.php outputs nothing' );
+
+	// safe-mode-key.php is excluded from snippet listing and zip export.
+	mc_assert( ! $store->is_safe_filename( 'safe-mode-key.php' ), 'safe-mode-key.php is not a snippet filename' );
+	$zip_path = $base . '/export.zip';
+	mc_assert( true === Rf_Site_Functionality_Snippet_Zip::export( $fallback_ob['dir'], $zip_path ), 'zip export succeeds' );
+	$zip = new ZipArchive();
+	$zip->open( $zip_path );
+	mc_assert( false === $zip->locateName( 'safe-mode-key.php' ), 'zip excludes safe-mode-key.php' );
+	mc_assert( false === $zip->locateName( 'web.config' ), 'zip excludes web.config' );
+	$zip->close();
+
+	mc_rrmdir( $base );
+	if ( $failed > 0 ) {
+		fwrite( STDERR, "{$failed} assertion(s) failed\n" );
+		exit( 1 );
+	}
+	fwrite( STDOUT, "phase 9 ok\n" );
+}
+
 if ( '1' === $phase ) {
 	mc_run_phase1();
 } elseif ( '2' === $phase ) {
@@ -775,6 +913,8 @@ if ( '1' === $phase ) {
 	mc_run_phase7();
 } elseif ( '8' === $phase ) {
 	mc_run_phase8();
+} elseif ( '9' === $phase ) {
+	mc_run_phase9();
 } else {
 	fwrite( STDERR, "Unknown phase: {$phase}\n" );
 	exit( 1 );
